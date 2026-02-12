@@ -297,7 +297,18 @@ def prob_from_pmf(pmf: List[float], predicate) -> float:
 
 
 def expect_from_pmf(pmf: List[float], f) -> float:
-    return sum(p * f(d) for d, p in enumerate(pmf))
+    total = 0.0
+    func_name = getattr(f, "__name__", type(f).__name__)
+    for d, p in enumerate(pmf):
+        if p == 0.0:
+            continue
+        val = f(d)
+        if not math.isfinite(val):
+            raise ValueError(
+                f"expect_from_pmf got non-finite value from {func_name} at d={d}, p={p}, val={val}"
+            )
+        total += p * val
+    return total
 
 
 # =============================================================================
