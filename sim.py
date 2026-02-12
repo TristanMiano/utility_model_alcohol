@@ -29,12 +29,30 @@ NOTE:
 from __future__ import annotations
 
 import math
+from array import array
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, List, Tuple
 
-import matplotlib.pyplot as plt
 import random as _random
 import argparse
+
+
+def make_histogram(values, bins: int, title: str, xlabel: str, ylabel: str) -> None:
+    """Plot histogram if matplotlib is available; otherwise print a warning and continue."""
+    import importlib.util
+
+    if importlib.util.find_spec("matplotlib") is None:
+        print("[warn] matplotlib is not installed; skipping histogram plot.")
+        return
+
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.hist(values, bins=bins)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.show()
 
 
 # =============================================================================
@@ -858,23 +876,35 @@ def median(xs: List[float]) -> float:
     return percentile(xs_sorted, 50.0)
 
 
-def run_once_batch() -> Dict[str, List[float]]:
-    """Run the current SCRIPT config for SCRIPT['num_runs'] and return full distributions."""
+def run_once_batch(include_keys: Iterable[str] | None = None) -> Dict[str, array]:
+    """
+    Run the current SCRIPT config for SCRIPT['num_runs'] and return selected distributions.
+
+    Memory note:
+    - Uses compact typed arrays instead of Python float lists.
+    - Callers can request only the keys they need, which is especially useful for large sweeps.
+    """
     num_runs = int(SCRIPT["num_runs"])
+    all_keys = (
+        "positive_utilons",
+        "negative_utilons",
+        "net_utilons",
+        "neg_acute",
+        "neg_hangover",
+        "neg_chronic",
+        "neg_aud",
+        "ihd_protection_term_separate",
+    )
+    selected_keys = tuple(include_keys) if include_keys is not None else all_keys
     results = {
-        "positive_utilons": [],
-        "negative_utilons": [],
-        "net_utilons": [],
-        "neg_acute": [],
-        "neg_hangover": [],
-        "neg_chronic": [],
-        "neg_aud": [],
-        "ihd_protection_term_separate": [],
+        key: array("d") for key in selected_keys
     }
+
     for _ in range(num_runs):
         out = simulate_one_person()
-        for k in results:
+        for k in selected_keys:
             results[k].append(out[k])
+
     return results
 
 # --- replace main() with this version (keeps original behavior unless you pass --sweep) ---
@@ -934,7 +964,8 @@ def main() -> None:
             # reseed per point for reproducibility
             reseed(base_seed + i)
 
-            results = run_once_batch()
+            # Sweep only needs net utilons for median, so avoid storing 7 unused channels.
+            results = run_once_batch(include_keys=("net_utilons",))
             m = median(results["net_utilons"])
             medians.append(m)
             pairs.append((d, m))
@@ -945,13 +976,13 @@ def main() -> None:
         print(f"\nBest (by median net utilons): drinks/day={best_d:.2f}  median_net={best_m:.4f}")
 
         # histogram of medians across drinks/day values
-        plt.figure()
-        plt.hist(medians, bins=int(SCRIPT["hist_bins"]))
-        plt.title("Histogram of median(net utilons) across drinks/day sweep points")
-        plt.xlabel("Median net utilons (per drinks/day value)")
-        plt.ylabel("Frequency")
-        plt.tight_layout()
-        plt.show()
+        make_histogram(
+            medians,
+            bins=int(SCRIPT["hist_bins"]),
+            title="Histogram of median(net utilons) across drinks/day sweep points",
+            xlabel="Median net utilons (per drinks/day value)",
+            ylabel="Frequency",
+        )
         return
 
     # ----------------------------
@@ -978,13 +1009,13 @@ def main() -> None:
     summarize("Negative breakdown: AUD Markov", results["neg_aud"])
     summarize("IHD protection term (separate; not netted by default)", results["ihd_protection_term_separate"])
 
-    plt.figure()
-    plt.hist(results["net_utilons"], bins=int(SCRIPT["hist_bins"]))
-    plt.title(str(SCRIPT["hist_title"]))
-    plt.xlabel("Discounted lifetime utilons (net)")
-    plt.ylabel("Frequency")
-    plt.tight_layout()
-    plt.show()
+    make_histogram(
+        results["net_utilons"],
+        bins=int(SCRIPT["hist_bins"]),
+        title=str(SCRIPT["hist_title"]),
+        xlabel="Discounted lifetime utilons (net)",
+        ylabel="Frequency",
+    )
 
 
 if __name__ == "__main__":
