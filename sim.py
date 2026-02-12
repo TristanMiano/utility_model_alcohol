@@ -560,7 +560,12 @@ def piecewise_log_rr(g_per_day: float, rr25: float, rr50: float, rr100: float) -
 
 def rr_from_rr10(rr10: float, grams_per_day: float) -> float:
     """RR(g) = rr10^(g/10)."""
-    return rr10 ** (grams_per_day / 10.0)
+    result = rr10 ** (grams_per_day / 10.0)
+    if not math.isfinite(result):
+        raise ValueError(
+            f"Non-finite RR from rr10={rr10}, grams_per_day={grams_per_day}: {result}"
+        )
+    return result
 
 
 def annual_negative_utilons_expected(pmf: List[float], neg: NegParams, ema_g: float, ema_cancer: float, ema_cirr: float
@@ -605,7 +610,22 @@ def annual_negative_utilons_expected(pmf: List[float], neg: NegParams, ema_g: fl
     # We scale baseline p0 per drinking day by expected RR.
     # Note: This makes p0 a "calibration knob": baseline conditional on being a drinking day at low dose.
     exp_rr_traffic = expect_from_pmf(pmf, rr_traffic_d)
+    if not math.isfinite(exp_rr_traffic):
+        raise ValueError(
+            "Non-finite exp_rr_traffic "
+            f"for drinks_per_day={SCRIPT['drinks_per_day']}, rr10_traffic={neg.rr10_traffic}, "
+            f"grams_per_drink={neg.grams_per_drink}, p0_injury_per_drinking_day={neg.p0_injury_per_drinking_day}: "
+            f"{exp_rr_traffic}"
+        )
+
     exp_rr_nontraffic = expect_from_pmf(pmf, rr_nontraffic_d)
+    if not math.isfinite(exp_rr_nontraffic):
+        raise ValueError(
+            "Non-finite exp_rr_nontraffic "
+            f"for drinks_per_day={SCRIPT['drinks_per_day']}, rr10_nontraffic={neg.rr10_nontraffic}, "
+            f"grams_per_drink={neg.grams_per_drink}, p0_injury_per_drinking_day={neg.p0_injury_per_drinking_day}: "
+            f"{exp_rr_nontraffic}"
+        )
 
     # expected events/year
     traffic_events = dpy * neg.p0_injury_per_drinking_day * exp_rr_traffic
@@ -629,8 +649,16 @@ def annual_negative_utilons_expected(pmf: List[float], neg: NegParams, ema_g: fl
         # RR per drink relative to 1 drink; we just apply rr^d as a steep toy approximation.
         return (neg.rr_per_drink_intentional ** d)
 
-    exp_rr_violence = expect_from_pmf(pmf, rr_violence_d)
-    violence_events = dpy * neg.p0_violence_per_binge_day * exp_rr_violence
+    exp_rr_violence_binge = expect_from_pmf(pmf, rr_violence_d)
+    if not math.isfinite(exp_rr_violence_binge):
+        raise ValueError(
+            "Non-finite exp_rr_violence_binge "
+            f"for drinks_per_day={SCRIPT['drinks_per_day']}, rr_per_drink_intentional={neg.rr_per_drink_intentional}, "
+            f"binge_threshold={neg.binge_threshold}, p0_violence_per_binge_day={neg.p0_violence_per_binge_day}: "
+            f"{exp_rr_violence_binge}"
+        )
+
+    violence_events = dpy * neg.p0_violence_per_binge_day * exp_rr_violence_binge
     violence_dalys = violence_events * daly_per_injury_event  # reuse injury DALY as proxy
 
     # Poisoning: step on HI days
