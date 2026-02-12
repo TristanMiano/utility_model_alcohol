@@ -35,6 +35,11 @@ from typing import Dict, Iterable, List, Tuple
 
 import random as _random
 import argparse
+import faulthandler
+import sys
+
+
+faulthandler.enable()
 
 
 def make_histogram(values, bins: int, title: str, xlabel: str, ylabel: str) -> None:
@@ -45,14 +50,17 @@ def make_histogram(values, bins: int, title: str, xlabel: str, ylabel: str) -> N
         print("[warn] matplotlib is not installed; skipping histogram plot.")
         return
 
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.hist(values, bins=bins)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.tight_layout()
-    plt.show()
+    try:
+        import matplotlib.pyplot as plt
+        plt.figure()
+        plt.hist(values, bins=bins)
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.tight_layout()
+        plt.show()
+    except Exception as exc:
+        print(f"[warn] matplotlib plotting failed; skipping histogram plot. ({exc})", file=sys.stderr)
 
 
 # =============================================================================
@@ -925,6 +933,8 @@ def main() -> None:
     parser.add_argument("--sweep-step", type=float, default=0.25, help="Step size for sweep")
     parser.add_argument("--runs-per-point", type=int, default=None,
                         help="Runs per sweep point (defaults to --runs or SCRIPT['num_runs'])")
+    parser.add_argument("--plot-sweep-hist", action="store_true",
+                        help="In --sweep mode, show histogram of medians after sweep completes")
 
     args = parser.parse_args()
 
@@ -953,8 +963,11 @@ def main() -> None:
 
         medians = []
         pairs = []  # (drinks, median_net)
-        print("=== Sweep: median(net utilons) by drinks/day ===")
-        print(f"Grid points: {len(grid)} | Runs/point: {runs_per_point:,} | day_count_model={SCRIPT['day_count_model']}")
+        print("=== Sweep: median(net utilons) by drinks/day ===", flush=True)
+        print(
+            f"Grid points: {len(grid)} | Runs/point: {runs_per_point:,} | day_count_model={SCRIPT['day_count_model']}",
+            flush=True,
+        )
 
         # run sweep
         for i, d in enumerate(grid):
@@ -969,20 +982,21 @@ def main() -> None:
             m = median(results["net_utilons"])
             medians.append(m)
             pairs.append((d, m))
-            print(f"  drinks/day={d:>5.2f}  median_net={m:>10.4f}")
+            print(f"  drinks/day={d:>5.2f}  median_net={m:>10.4f}", flush=True)
 
         # find best by median
         best_d, best_m = max(pairs, key=lambda t: t[1])
-        print(f"\nBest (by median net utilons): drinks/day={best_d:.2f}  median_net={best_m:.4f}")
+        print(f"\nBest (by median net utilons): drinks/day={best_d:.2f}  median_net={best_m:.4f}", flush=True)
 
         # histogram of medians across drinks/day values
-        make_histogram(
-            medians,
-            bins=int(SCRIPT["hist_bins"]),
-            title="Histogram of median(net utilons) across drinks/day sweep points",
-            xlabel="Median net utilons (per drinks/day value)",
-            ylabel="Frequency",
-        )
+        if args.plot_sweep_hist:
+            make_histogram(
+                medians,
+                bins=int(SCRIPT["hist_bins"]),
+                title="Histogram of median(net utilons) across drinks/day sweep points",
+                xlabel="Median net utilons (per drinks/day value)",
+                ylabel="Frequency",
+            )
         return
 
     # ----------------------------
