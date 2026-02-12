@@ -29,6 +29,10 @@ NOTE:
 from __future__ import annotations
 
 import math
+import os
+import platform
+import time
+import traceback
 from array import array
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Tuple
@@ -39,7 +43,7 @@ import faulthandler
 import sys
 
 
-faulthandler.enable()
+faulthandler.enable(all_threads=True)
 
 
 def make_histogram(values, bins: int, title: str, xlabel: str, ylabel: str) -> None:
@@ -765,6 +769,7 @@ def simulate_one_person() -> Dict[str, float]:
     mean_drinks = float(SCRIPT["drinks_per_day"])
 
     pmf = drinks_pmf(mean_drinks)
+    validate_pmf(pmf, where="simulate_one_person")
 
     # sample person parameters
     pos_person = sample_pos_person()
@@ -915,6 +920,30 @@ def run_once_batch(include_keys: Iterable[str] | None = None) -> Dict[str, array
 
     return results
 
+
+def runtime_debug_banner() -> None:
+    """Print deterministic runtime diagnostics to help isolate hard crashes."""
+    print("=== Runtime debug info ===", flush=True)
+    print(f"python_version: {sys.version}", flush=True)
+    print(f"python_executable: {sys.executable}", flush=True)
+    print(f"platform: {platform.platform()}", flush=True)
+    print(f"processor: {platform.processor()}", flush=True)
+    print(f"pid: {os.getpid()}", flush=True)
+
+
+def validate_pmf(pmf: List[float], *, where: str) -> None:
+    """Fail fast on PMF corruption to separate logic bugs from native crashes."""
+    if not pmf:
+        raise ValueError(f"[{where}] PMF is empty")
+    if any((not math.isfinite(p)) for p in pmf):
+        raise ValueError(f"[{where}] PMF contains non-finite value(s)")
+    if any(p < 0.0 for p in pmf):
+        raise ValueError(f"[{where}] PMF contains negative probability")
+
+    total = sum(pmf)
+    if not math.isclose(total, 1.0, rel_tol=1e-9, abs_tol=1e-9):
+        raise ValueError(f"[{where}] PMF sum != 1.0 (sum={total:.12f})")
+
 # --- replace main() with this version (keeps original behavior unless you pass --sweep) ---
 def main() -> None:
     parser = argparse.ArgumentParser(description="Monte Carlo alcohol welfare simulation")
@@ -935,8 +964,18 @@ def main() -> None:
                         help="Runs per sweep point (defaults to --runs or SCRIPT['num_runs'])")
     parser.add_argument("--plot-sweep-hist", action="store_true",
                         help="In --sweep mode, show histogram of medians after sweep completes")
+    parser.add_argument("--debug", action="store_true",
+                        help="Print detailed runtime diagnostics for debugging hard crashes")
+    parser.add_argument("--debug-every", type=int, default=10,
+                        help="When --debug is set, print point-level progress every N sweep points")
+    parser.add_argument("--faulthandler-log", type=str, default=None,
+                        help="Optional file path to write faulthandler dumps")
 
     args = parser.parse_args()
+
+    if args.faulthandler_log:
+        fh_file = open(args.faulthandler_log, "w", encoding="utf-8")
+        faulthandler.enable(file=fh_file, all_threads=True)
 
     # Apply basic overrides
     if args.drinks_per_day is not None:
@@ -955,6 +994,13 @@ def main() -> None:
 
         # build grid (inclusive of max with float tolerance)
         dmin, dmax, step = float(args.sweep_min), float(args.sweep_max), float(args.sweep_step)
+
+        if args.debug:
+            runtime_debug_banner()
+            print(
+                f"sweep_range: min={dmin} max={dmax} step={step} | base_seed={base_seed} | runs_per_point={runs_per_point}",
+                flush=True,
+            )
         grid = []
         x = dmin
         while x <= dmax + 1e-12:
@@ -973,16 +1019,43 @@ def main() -> None:
         for i, d in enumerate(grid):
             SCRIPT["drinks_per_day"] = float(d)
             SCRIPT["num_runs"] = runs_per_point
+            point_seed = base_seed + i
 
             # reseed per point for reproducibility
-            reseed(base_seed + i)
+            reseed(point_seed)
+
+            if args.debug and (i % max(1, int(args.debug_every)) == 0 or i == len(grid) - 1):
+                pmf = drinks_pmf(float(d))
+                validate_pmf(pmf, where=f"sweep_point_{i}")
+                print(
+                    (
+                        f"[debug] point={i+1}/{len(grid)} d={d:.4f} seed={point_seed} "
+                        f"pmf_sum={sum(pmf):.12f} p0={pmf[0]:.12f} p_cap={pmf[-1]:.12f}"
+                    ),
+                    flush=True,
+                )
 
             # Sweep only needs net utilons for median, so avoid storing 7 unused channels.
-            results = run_once_batch(include_keys=("net_utilons",))
+            t0 = time.perf_counter()
+            try:
+                results = run_once_batch(include_keys=("net_utilons",))
+            except Exception:
+                print(f"[debug] exception at sweep point index={i} drinks/day={d} seed={point_seed}", flush=True)
+                print(traceback.format_exc(), flush=True)
+                raise
+            dt = time.perf_counter() - t0
             m = median(results["net_utilons"])
             medians.append(m)
             pairs.append((d, m))
-            print(f"  drinks/day={d:>5.2f}  median_net={m:>10.4f}", flush=True)
+            if args.debug:
+                min_net = min(results["net_utilons"])
+                max_net = max(results["net_utilons"])
+                print(
+                    f"  drinks/day={d:>5.2f}  median_net={m:>10.4f}  min={min_net:>10.4f}  max={max_net:>10.4f}  sec={dt:>7.4f}",
+                    flush=True,
+                )
+            else:
+                print(f"  drinks/day={d:>5.2f}  median_net={m:>10.4f}", flush=True)
 
         # find best by median
         best_d, best_m = max(pairs, key=lambda t: t[1])
