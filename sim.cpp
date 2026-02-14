@@ -435,6 +435,85 @@ struct DailyState {
     double ihd_term = 0.0;
 };
 
+struct DailyEventState {
+    bool alive = true;
+    int hangover_days_remaining = 0;
+};
+
+struct DailyEventResult {
+    bool traffic_event = false;
+    bool nontraffic_event = false;
+    bool violence_event = false;
+    bool poison_event = false;
+    int acute_event_count = 0;
+    double acute_utilons = 0.0;
+    double hang_utilons = 0.0;
+    bool fatal_event = false;
+};
+
+DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, DailyEventState& state) {
+    DailyEventResult out;
+    if (!state.alive) return out;
+
+    int grams_today = drinks_today * neg.grams_per_drink;
+    bool is_drinking = drinks_today > 0;
+    bool is_binge = drinks_today >= neg.binge_threshold;
+    bool is_hi = drinks_today >= neg.high_intensity_multiplier * neg.binge_threshold;
+
+    double p_traffic = 0.0;
+    double p_nontraffic = 0.0;
+    if (is_drinking) {
+        p_traffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_traffic, grams_today), 0.0, 1.0);
+        p_nontraffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_nontraffic, grams_today), 0.0, 1.0);
+    }
+    std::bernoulli_distribution traffic_draw(p_traffic);
+    std::bernoulli_distribution nontraffic_draw(p_nontraffic);
+    out.traffic_event = traffic_draw(RNG);
+    out.nontraffic_event = nontraffic_draw(RNG);
+
+    double p_violence = is_binge
+        ? std::clamp(neg.p0_violence_per_binge_day * std::pow(neg.rr_per_drink_intentional, drinks_today), 0.0, 1.0)
+        : 0.0;
+    std::bernoulli_distribution violence_draw(p_violence);
+    out.violence_event = violence_draw(RNG);
+
+    double p_poison = is_hi ? std::clamp(neg.p_poison_per_hi_day, 0.0, 1.0) : 0.0;
+    std::bernoulli_distribution poison_draw(p_poison);
+    out.poison_event = poison_draw(RNG);
+
+    out.acute_event_count = static_cast<int>(out.traffic_event) + static_cast<int>(out.nontraffic_event) +
+        static_cast<int>(out.violence_event) + static_cast<int>(out.poison_event);
+
+    double daly_injury = (1.0 - neg.injury_case_fatality) * neg.daly_nonfatal_injury + neg.injury_case_fatality * neg.daly_fatal_injury;
+    if (out.traffic_event) out.acute_utilons += daly_injury * (1.0 + neg.traffic_externality_multiplier) * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.nontraffic_event) out.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.violence_event) out.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.poison_event) {
+        double daly_poison = (1.0 - neg.poison_case_fatality) * neg.poison_daly_nonfatal + neg.poison_case_fatality * neg.daly_fatal_injury;
+        out.acute_utilons += daly_poison * neg.qaly_to_wellby * neg.causal_weight;
+    }
+
+    if (is_binge) {
+        std::bernoulli_distribution hang_draw(std::clamp(neg.p_hangover_given_binge, 0.0, 1.0));
+        if (hang_draw(RNG)) {
+            state.hangover_days_remaining = std::max(state.hangover_days_remaining, neg.hangover_duration_days);
+        }
+    }
+    if (state.hangover_days_remaining > 0) {
+        out.hang_utilons = neg.hangover_ls_loss_per_day / SCRIPT.days_per_year;
+        --state.hangover_days_remaining;
+    }
+
+    double p_die = 0.0;
+    if (out.traffic_event || out.nontraffic_event || out.violence_event) p_die = std::max(p_die, neg.injury_case_fatality);
+    if (out.poison_event) p_die = std::max(p_die, neg.poison_case_fatality);
+    std::bernoulli_distribution death_draw(std::clamp(p_die, 0.0, 1.0));
+    out.fatal_event = death_draw(RNG);
+    state.alive = !out.fatal_event;
+
+    return out;
+}
+
 struct SimOut { double pos, neg, net, acute, hang, chronic, aud, ihd; };
 
 SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) {
@@ -449,7 +528,7 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
 
     double ema_g=0.0, ema_ca=0.0, ema_ci=0.0;
     int aud_state = 0;
-    int hang_days_remaining = 0;
+    DailyEventState daily_event_state;
 
     double pos_total=0.0, neg_total=0.0, neg_acute=0.0, neg_hang=0.0, neg_chronic=0.0, ihd_total=0.0, neg_aud=0.0;
     std::uniform_real_distribution<double> u01(0.0, 1.0);
@@ -470,48 +549,16 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         ema_ca = a_ca * ema_ca + (1.0 - a_ca) * grams_today;
         ema_ci = a_ci * ema_ci + (1.0 - a_ci) * grams_today;
 
-        bool is_drinking = st.drinks_today > 0;
         bool is_binge = st.drinks_today >= neg.binge_threshold;
-        bool is_hi = st.drinks_today >= neg.high_intensity_multiplier * neg.binge_threshold;
 
-        double p_traffic = 0.0;
-        double p_nontraffic = 0.0;
-        if (is_drinking) {
-            p_traffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_traffic, grams_today), 0.0, 1.0);
-            p_nontraffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_nontraffic, grams_today), 0.0, 1.0);
-        }
-        std::bernoulli_distribution traffic_draw(p_traffic);
-        std::bernoulli_distribution nontraffic_draw(p_nontraffic);
-        st.traffic_event = traffic_draw(RNG);
-        st.nontraffic_event = nontraffic_draw(RNG);
-
-        double p_violence = is_binge ? std::clamp(neg.p0_violence_per_binge_day * std::pow(neg.rr_per_drink_intentional, st.drinks_today), 0.0, 1.0) : 0.0;
-        std::bernoulli_distribution violence_draw(p_violence);
-        st.violence_event = violence_draw(RNG);
-
-        double p_poison = is_hi ? std::clamp(neg.p_poison_per_hi_day, 0.0, 1.0) : 0.0;
-        std::bernoulli_distribution poison_draw(p_poison);
-        st.poison_event = poison_draw(RNG);
-
-        st.acute_event_count = static_cast<int>(st.traffic_event) + static_cast<int>(st.nontraffic_event) + static_cast<int>(st.violence_event) + static_cast<int>(st.poison_event);
-
-        double daly_injury = (1.0 - neg.injury_case_fatality) * neg.daly_nonfatal_injury + neg.injury_case_fatality * neg.daly_fatal_injury;
-        if (st.traffic_event) st.acute_utilons += daly_injury * (1.0 + neg.traffic_externality_multiplier) * neg.qaly_to_wellby * neg.causal_weight;
-        if (st.nontraffic_event) st.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
-        if (st.violence_event) st.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
-        if (st.poison_event) {
-            double daly_poison = (1.0 - neg.poison_case_fatality) * neg.poison_daly_nonfatal + neg.poison_case_fatality * neg.daly_fatal_injury;
-            st.acute_utilons += daly_poison * neg.qaly_to_wellby * neg.causal_weight;
-        }
-
-        if (is_binge) {
-            std::bernoulli_distribution hang_draw(std::clamp(neg.p_hangover_given_binge, 0.0, 1.0));
-            if (hang_draw(RNG)) hang_days_remaining = std::max(hang_days_remaining, neg.hangover_duration_days);
-        }
-        if (hang_days_remaining > 0) {
-            st.hang_utilons = neg.hangover_ls_loss_per_day / SCRIPT.days_per_year;
-            --hang_days_remaining;
-        }
+        DailyEventResult day_events = simulate_daily_events(st.drinks_today, neg, daily_event_state);
+        st.traffic_event = day_events.traffic_event;
+        st.nontraffic_event = day_events.nontraffic_event;
+        st.violence_event = day_events.violence_event;
+        st.poison_event = day_events.poison_event;
+        st.acute_event_count = day_events.acute_event_count;
+        st.acute_utilons = day_events.acute_utilons;
+        st.hang_utilons = day_events.hang_utilons;
 
         double rr_cancer = rr_from_rr10(neg.rr10_all_cancer, ema_ca);
         double cancer_utilons_year = neg.baseline_daly_all_cancer * std::max(0.0, rr_cancer - 1.0) * neg.qaly_to_wellby * neg.cancer_causal_weight;
@@ -561,11 +608,7 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
 
         neg_total += disc * (st.acute_utilons + st.hang_utilons + st.chronic_utilons);
 
-        double p_die = 0.0;
-        if (st.traffic_event || st.nontraffic_event || st.violence_event) p_die = std::max(p_die, neg.injury_case_fatality);
-        if (st.poison_event) p_die = std::max(p_die, neg.poison_case_fatality);
-        std::bernoulli_distribution death_draw(std::clamp(p_die, 0.0, 1.0));
-        st.alive = !death_draw(RNG);
+        st.alive = daily_event_state.alive;
         days.push_back(st);
         if (!st.alive) break;
     }
