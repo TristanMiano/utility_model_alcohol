@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <exception>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -841,6 +842,73 @@ void print_event_share_summary_table(const std::vector<SimOut>& runs) {
     }
 }
 
+struct HistogramBin {
+    double left = 0.0;
+    double right = 0.0;
+    int count = 0;
+};
+
+std::vector<HistogramBin> build_histogram(const std::vector<double>& xs, int bins) {
+    std::vector<HistogramBin> out;
+    if (xs.empty()) return out;
+    int n_bins = std::max(1, bins);
+    double min_v = *std::min_element(xs.begin(), xs.end());
+    double max_v = *std::max_element(xs.begin(), xs.end());
+    out.resize(n_bins);
+
+    if (min_v == max_v) {
+        out[0] = {min_v, max_v, static_cast<int>(xs.size())};
+        for (int i = 1; i < n_bins; ++i) out[i] = {min_v, max_v, 0};
+        return out;
+    }
+
+    double width = (max_v - min_v) / n_bins;
+    for (int i = 0; i < n_bins; ++i) {
+        double left = min_v + i * width;
+        double right = (i == n_bins - 1) ? max_v : left + width;
+        out[i] = {left, right, 0};
+    }
+
+    for (double x : xs) {
+        int idx = static_cast<int>((x - min_v) / width);
+        if (idx < 0) idx = 0;
+        if (idx >= n_bins) idx = n_bins - 1;
+        out[idx].count += 1;
+    }
+    return out;
+}
+
+void print_histogram_data(const std::string& label, const std::vector<double>& xs, int bins) {
+    auto hist = build_histogram(xs, bins);
+    std::cout << "\n--- Histogram data: " << label << " ---\n";
+    std::cout << "bin,left,right,count\n";
+    for (size_t i = 0; i < hist.size(); ++i) {
+        std::cout << i << ","
+                  << std::fixed << std::setprecision(6) << hist[i].left << ","
+                  << std::fixed << std::setprecision(6) << hist[i].right << ","
+                  << hist[i].count << "\n";
+    }
+}
+
+void write_histogram_csv(
+    const std::string& out_path,
+    const std::vector<std::pair<std::string, const std::vector<double>*>>& series,
+    int bins
+) {
+    std::ofstream out(out_path);
+    if (!out) throw std::runtime_error("Failed to open histogram output file: " + out_path);
+    out << "metric,bin,left,right,count\n";
+    for (const auto& entry : series) {
+        auto hist = build_histogram(*entry.second, bins);
+        for (size_t i = 0; i < hist.size(); ++i) {
+            out << entry.first << "," << i << ","
+                << std::fixed << std::setprecision(10) << hist[i].left << ","
+                << std::fixed << std::setprecision(10) << hist[i].right << ","
+                << hist[i].count << "\n";
+        }
+    }
+}
+
 double mean(const std::vector<double>& xs){ return xs.empty()?std::numeric_limits<double>::quiet_NaN():std::accumulate(xs.begin(), xs.end(), 0.0)/xs.size(); }
 
 double percentile(std::vector<double> xs, double p) {
@@ -866,11 +934,13 @@ void summarize(const std::string& label, const std::vector<double>& xs) {
 }
 
 void usage() {
-    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N]\n";
+    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N] [--print-hist-data] [--hist-data-out PATH]\n";
 }
 
 int main(int argc, char** argv) {
     bool sweep = false;
+    bool print_hist_data = false;
+    std::string hist_data_out;
     double sweep_min = 0.0, sweep_max = 8.0, sweep_step = 0.25;
     int runs_per_point = -1;
 
@@ -886,6 +956,8 @@ int main(int argc, char** argv) {
         else if (a == "--sweep-max") sweep_max = std::stod(need(a));
         else if (a == "--sweep-step") sweep_step = std::stod(need(a));
         else if (a == "--runs-per-point") runs_per_point = std::stoi(need(a));
+        else if (a == "--print-hist-data") print_hist_data = true;
+        else if (a == "--hist-data-out") hist_data_out = need(a);
         else if (a == "--help") { usage(); return 0; }
         else throw std::runtime_error("Unknown argument: " + a);
     }
@@ -962,6 +1034,28 @@ int main(int argc, char** argv) {
 
     print_event_share_summary_table(all_runs);
 
-    std::cout << "\n[warn] Histogram plotting is not implemented in C++ version.\n";
+    std::vector<std::pair<std::string, const std::vector<double>*>> hist_series{
+        {"positive", &pos},
+        {"negative", &neg},
+        {"net", &net},
+        {"acute", &acute},
+        {"hangover", &hang},
+        {"chronic", &chronic},
+        {"aud", &aud},
+        {"ihd", &ihd},
+    };
+
+    if (print_hist_data) {
+        for (const auto& entry : hist_series) print_histogram_data(entry.first, *entry.second, SCRIPT.hist_bins);
+    }
+
+    if (!hist_data_out.empty()) {
+        write_histogram_csv(hist_data_out, hist_series, SCRIPT.hist_bins);
+        std::cout << "\nHistogram data written to: " << hist_data_out << "\n";
+    }
+
+    if (!print_hist_data && hist_data_out.empty()) {
+        std::cout << "\n[info] Use --print-hist-data to print histogram bins or --hist-data-out <file.csv> to export bins for plotting.\n";
+    }
     return 0;
 }
