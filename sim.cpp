@@ -73,13 +73,13 @@ struct NegModel {
     std::vector<double> traffic_injury_rr_per_10g_choices{1.18, 1.24, 1.30};
     std::vector<double> nontraffic_injury_rr_per_10g_choices{1.26, 1.30, 1.34};
     std::vector<double> intentional_injury_rr_per_drink_choices{1.25, 1.38, 1.50};
-    std::vector<double> injury_baseline_prob_per_drinking_day_choices{1e-6, 5e-6, 2e-5, 1e-4};
-    std::vector<double> violence_baseline_prob_per_binge_day_choices{1e-7, 5e-7, 2e-6, 1e-5};
+    std::vector<double> injury_baseline_prob_per_drinking_day_choices{1e-4, 2.5e-4, 5e-4, 1e-3};
+    std::vector<double> violence_baseline_prob_per_binge_day_choices{5e-6, 1e-5, 2e-5, 5e-5};
     std::vector<double> injury_daly_per_nonfatal_event_choices{0.005, 0.02, 0.05};
     std::vector<double> injury_case_fatality_choices{0.002, 0.005, 0.01};
     std::vector<double> injury_daly_per_fatal_event_choices{20, 30, 40};
     std::vector<double> traffic_injury_externality_multiplier_choices{0.5, 1.0, 1.5};
-    std::vector<double> poisoning_prob_per_high_intensity_day_choices{1e-8, 1e-7, 1e-6};
+    std::vector<double> poisoning_prob_per_high_intensity_day_choices{1e-6, 3e-6, 1e-5, 3e-5};
     std::vector<double> poisoning_case_fatality_choices{0.005, 0.01, 0.02};
     std::vector<double> poisoning_daly_nonfatal_choices{0.01, 0.05, 0.2};
     std::vector<double> hangover_prob_given_binge_choices{0.3, 0.5, 0.7, 0.9};
