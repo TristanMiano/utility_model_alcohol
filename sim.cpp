@@ -435,9 +435,14 @@ struct DailyState {
     double ihd_term = 0.0;
 };
 
-struct DailyEventState {
+struct LifeState {
     bool alive = true;
+    // AUD state coding: 0 = never AUD, 1 = active AUD, 2 = remission.
+    int aud_state = 0;
     int hangover_days_remaining = 0;
+    double ema_g = 0.0;
+    double ema_ca = 0.0;
+    double ema_ci = 0.0;
 };
 
 struct DailyEventResult {
@@ -451,7 +456,7 @@ struct DailyEventResult {
     bool fatal_event = false;
 };
 
-DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, DailyEventState& state) {
+DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, LifeState& state, double aud_event_risk_multiplier) {
     DailyEventResult out;
     if (!state.alive) return out;
 
@@ -463,8 +468,8 @@ DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, D
     double p_traffic = 0.0;
     double p_nontraffic = 0.0;
     if (is_drinking) {
-        p_traffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_traffic, grams_today), 0.0, 1.0);
-        p_nontraffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_nontraffic, grams_today), 0.0, 1.0);
+        p_traffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_traffic, grams_today) * aud_event_risk_multiplier, 0.0, 1.0);
+        p_nontraffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_nontraffic, grams_today) * aud_event_risk_multiplier, 0.0, 1.0);
     }
     std::bernoulli_distribution traffic_draw(p_traffic);
     std::bernoulli_distribution nontraffic_draw(p_nontraffic);
@@ -472,12 +477,12 @@ DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, D
     out.nontraffic_event = nontraffic_draw(RNG);
 
     double p_violence = is_binge
-        ? std::clamp(neg.p0_violence_per_binge_day * std::pow(neg.rr_per_drink_intentional, drinks_today), 0.0, 1.0)
+        ? std::clamp(neg.p0_violence_per_binge_day * std::pow(neg.rr_per_drink_intentional, drinks_today) * aud_event_risk_multiplier, 0.0, 1.0)
         : 0.0;
     std::bernoulli_distribution violence_draw(p_violence);
     out.violence_event = violence_draw(RNG);
 
-    double p_poison = is_hi ? std::clamp(neg.p_poison_per_hi_day, 0.0, 1.0) : 0.0;
+    double p_poison = is_hi ? std::clamp(neg.p_poison_per_hi_day * aud_event_risk_multiplier, 0.0, 1.0) : 0.0;
     std::bernoulli_distribution poison_draw(p_poison);
     out.poison_event = poison_draw(RNG);
 
@@ -526,16 +531,21 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
     double a_ca = alpha_from_half_life(neg.half_life_cancer);
     double a_ci = alpha_from_half_life(neg.half_life_cirrhosis);
 
-    double ema_g=0.0, ema_ca=0.0, ema_ci=0.0;
-    int aud_state = 0;
-    DailyEventState daily_event_state;
+    LifeState life_state;
 
     double pos_total=0.0, neg_total=0.0, neg_acute=0.0, neg_hang=0.0, neg_chronic=0.0, ihd_total=0.0, neg_aud=0.0;
     std::uniform_real_distribution<double> u01(0.0, 1.0);
 
     for (int day = 0; day < total_days; ++day) {
+        if (!life_state.alive) break;
+
         DailyState st;
-        st.drinks_today = sample_drinks_today(SCRIPT.drinks_per_day);
+        // Assumption: active AUD increases next-day drinking intensity, while remission has partial persistence.
+        // These multipliers are intentionally conservative placeholders pending direct calibration data.
+        double aud_drink_multiplier = 1.0;
+        if (life_state.aud_state == 1) aud_drink_multiplier = 1.35;
+        else if (life_state.aud_state == 2) aud_drink_multiplier = 0.90;
+        st.drinks_today = sample_drinks_today(SCRIPT.drinks_per_day * aud_drink_multiplier);
         double t_years = (day + 0.5) / static_cast<double>(SCRIPT.days_per_year);
         double disc = discount_factor_continuous(SCRIPT.discount_rate_annual, t_years);
 
@@ -545,13 +555,17 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         pos_total += disc * st.pos_ls;
 
         int grams_today = st.drinks_today * neg.grams_per_drink;
-        ema_g = a_g * ema_g + (1.0 - a_g) * grams_today;
-        ema_ca = a_ca * ema_ca + (1.0 - a_ca) * grams_today;
-        ema_ci = a_ci * ema_ci + (1.0 - a_ci) * grams_today;
+        life_state.ema_g = a_g * life_state.ema_g + (1.0 - a_g) * grams_today;
+        life_state.ema_ca = a_ca * life_state.ema_ca + (1.0 - a_ca) * grams_today;
+        life_state.ema_ci = a_ci * life_state.ema_ci + (1.0 - a_ci) * grams_today;
 
         bool is_binge = st.drinks_today >= neg.binge_threshold;
 
-        DailyEventResult day_events = simulate_daily_events(st.drinks_today, neg, daily_event_state);
+        // Assumption: active AUD elevates acute event risk above dose-only effects; remission retains a smaller excess risk.
+        double aud_event_risk_multiplier = 1.0;
+        if (life_state.aud_state == 1) aud_event_risk_multiplier = 1.25;
+        else if (life_state.aud_state == 2) aud_event_risk_multiplier = 1.08;
+        DailyEventResult day_events = simulate_daily_events(st.drinks_today, neg, life_state, aud_event_risk_multiplier);
         st.traffic_event = day_events.traffic_event;
         st.nontraffic_event = day_events.nontraffic_event;
         st.violence_event = day_events.violence_event;
@@ -560,11 +574,11 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         st.acute_utilons = day_events.acute_utilons;
         st.hang_utilons = day_events.hang_utilons;
 
-        double rr_cancer = rr_from_rr10(neg.rr10_all_cancer, ema_ca);
+        double rr_cancer = rr_from_rr10(neg.rr10_all_cancer, life_state.ema_ca);
         double cancer_utilons_year = neg.baseline_daly_all_cancer * std::max(0.0, rr_cancer - 1.0) * neg.qaly_to_wellby * neg.cancer_causal_weight;
-        double rr_cirr = piecewise_log_rr(ema_ci, neg.rr_cirr_25, neg.rr_cirr_50, neg.rr_cirr_100);
+        double rr_cirr = piecewise_log_rr(life_state.ema_ci, neg.rr_cirr_25, neg.rr_cirr_50, neg.rr_cirr_100);
         double cirr_utilons_year = neg.baseline_daly_cirrhosis * std::max(0.0, rr_cirr - 1.0) * neg.qaly_to_wellby * neg.causal_weight;
-        double drinks_equiv = ema_g / std::max(1e-9, static_cast<double>(neg.grams_per_drink));
+        double drinks_equiv = life_state.ema_g / std::max(1e-9, static_cast<double>(neg.grams_per_drink));
         double rr_af = std::pow(neg.rr_af_per_drink, drinks_equiv);
         double af_utilons_year = neg.baseline_daly_af * std::max(0.0, rr_af - 1.0) * neg.qaly_to_wellby * neg.causal_weight;
         st.chronic_utilons = (cancer_utilons_year + cirr_utilons_year + af_utilons_year) / SCRIPT.days_per_year;
@@ -574,27 +588,33 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
             st.ihd_term = (neg.baseline_daly_ihd * (ihd_rr - 1.0) * neg.qaly_to_wellby * neg.causal_weight) / SCRIPT.days_per_year;
         }
 
-        int day_of_year = day % SCRIPT.days_per_year;
-        if (day_of_year == 0) {
+        int day_of_month = day % 30;
+        if (day_of_month == 0 && day > 0) {
             double risk_days = 0.0;
-            double per_year_drinks = 0.0;
-            int start = std::max(0, day - SCRIPT.days_per_year);
+            double drinks_recent = 0.0;
+            int start = std::max(0, day - 30);
             for (int k = start; k < day; ++k) {
-                per_year_drinks += days[k].drinks_today;
+                drinks_recent += days[k].drinks_today;
                 if (days[k].drinks_today >= neg.binge_threshold) risk_days += 1.0;
             }
-            double or_mult = aud_or_multiplier_from_risk_days_per_year(risk_days);
+
+            double annualized_risk_days = risk_days * (365.0 / 30.0);
+            double or_mult = aud_or_multiplier_from_risk_days_per_year(annualized_risk_days);
+            double onset_month = std::clamp((neg.aud_onset_base * or_mult) / 12.0, 0.0, 1.0);
+            double remission_month = std::clamp(neg.aud_remission / 12.0, 0.0, 1.0);
+            bool recent_risk_drinking = risk_days > 0.0 || drinks_recent > 0.0;
+            double relapse_month = std::clamp((neg.aud_relapse_base * (recent_risk_drinking ? neg.aud_relapse_mult_if_risk : 1.0)) / 12.0, 0.0, 1.0);
+
             double u = u01(RNG);
-            if (aud_state == 0) {
-                if (u < neg.aud_onset_base * or_mult) aud_state = 1;
-            } else if (aud_state == 1) {
-                if (u < neg.aud_remission) aud_state = 2;
+            if (life_state.aud_state == 0) {
+                if (u < onset_month) life_state.aud_state = 1;
+            } else if (life_state.aud_state == 1) {
+                if (u < remission_month) life_state.aud_state = 2;
             } else {
-                double relapse = neg.aud_relapse_base * (per_year_drinks > 0.0 ? neg.aud_relapse_mult_if_risk : 1.0);
-                if (u < relapse) aud_state = 1;
+                if (u < relapse_month) life_state.aud_state = 1;
             }
         }
-        st.aud_active = (aud_state == 1);
+        st.aud_active = (life_state.aud_state == 1);
         if (st.aud_active) {
             double aud_day = (neg.aud_disability_weight * neg.qaly_to_wellby + neg.aud_depression_ls_addon * neg.mental_health_causal_weight) / SCRIPT.days_per_year;
             neg_aud += disc * aud_day * neg.causal_weight;
@@ -608,9 +628,9 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
 
         neg_total += disc * (st.acute_utilons + st.hang_utilons + st.chronic_utilons);
 
-        st.alive = daily_event_state.alive;
+        st.alive = life_state.alive;
         days.push_back(st);
-        if (!st.alive) break;
+        if (!life_state.alive) break;
     }
 
     neg_total += neg_aud;
