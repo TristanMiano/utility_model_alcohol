@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cctype>
 #include <cstdint>
 #include <exception>
 #include <fstream>
@@ -13,6 +14,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <tuple>
 #include <vector>
 
@@ -934,7 +937,203 @@ void summarize(const std::string& label, const std::vector<double>& xs) {
 }
 
 void usage() {
-    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N] [--print-hist-data] [--hist-data-out PATH]\n";
+    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N] [--print-hist-data] [--hist-data-out PATH] [--<choice-param> v1,v2,...] [--list-choice-params]\n";
+}
+
+std::string trim(std::string s) {
+    auto is_ws = [](unsigned char c) { return std::isspace(c) != 0; };
+    while (!s.empty() && is_ws(static_cast<unsigned char>(s.front()))) s.erase(s.begin());
+    while (!s.empty() && is_ws(static_cast<unsigned char>(s.back()))) s.pop_back();
+    return s;
+}
+
+template <typename T>
+std::vector<T> parse_csv_list(const std::string& raw);
+
+template <>
+std::vector<double> parse_csv_list<double>(const std::string& raw) {
+    std::vector<double> out;
+    std::stringstream ss(raw);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        token = trim(token);
+        if (token.empty()) continue;
+        out.push_back(std::stod(token));
+    }
+    if (out.empty()) throw std::runtime_error("Expected at least one numeric value in list: " + raw);
+    return out;
+}
+
+template <>
+std::vector<int> parse_csv_list<int>(const std::string& raw) {
+    std::vector<int> out;
+    std::stringstream ss(raw);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        token = trim(token);
+        if (token.empty()) continue;
+        out.push_back(std::stoi(token));
+    }
+    if (out.empty()) throw std::runtime_error("Expected at least one integer value in list: " + raw);
+    return out;
+}
+
+template <>
+std::vector<bool> parse_csv_list<bool>(const std::string& raw) {
+    std::vector<bool> out;
+    std::stringstream ss(raw);
+    std::string token;
+    while (std::getline(ss, token, ',')) {
+        token = trim(token);
+        std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+        if (token.empty()) continue;
+        if (token == "1" || token == "true") out.push_back(true);
+        else if (token == "0" || token == "false") out.push_back(false);
+        else throw std::runtime_error("Expected boolean list values (true/false/1/0), got: " + token);
+    }
+    if (out.empty()) throw std::runtime_error("Expected at least one boolean value in list: " + raw);
+    return out;
+}
+
+template <typename T>
+bool maybe_override_choice(const std::unordered_map<std::string, std::string>& arg_values,
+                           std::unordered_set<std::string>& consumed_keys,
+                           const std::string& key,
+                           std::vector<T>& target) {
+    auto it = arg_values.find(key);
+    if (it == arg_values.end()) return false;
+    target = parse_csv_list<T>(it->second);
+    consumed_keys.insert(key);
+    return true;
+}
+
+void apply_choice_overrides(const std::unordered_map<std::string, std::string>& arg_values) {
+    std::unordered_set<std::string> consumed_keys;
+    maybe_override_choice(arg_values, consumed_keys, "p-social-day", POS_MODEL.p_social_day);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-stress", POS_MODEL.baseline_stress);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-sociability", POS_MODEL.baseline_sociability);
+    maybe_override_choice(arg_values, consumed_keys, "social-setting-quality", POS_MODEL.social_setting_quality);
+    maybe_override_choice(arg_values, consumed_keys, "responsiveness", POS_MODEL.responsiveness);
+    maybe_override_choice(arg_values, consumed_keys, "saturation-rate", POS_MODEL.saturation_rate);
+    maybe_override_choice(arg_values, consumed_keys, "ls-per-session-score", POS_MODEL.ls_per_session_score);
+    maybe_override_choice(arg_values, consumed_keys, "w-enjoyment", POS_MODEL.w_enjoyment);
+    maybe_override_choice(arg_values, consumed_keys, "w-relaxation", POS_MODEL.w_relaxation);
+    maybe_override_choice(arg_values, consumed_keys, "w-social", POS_MODEL.w_social);
+    maybe_override_choice(arg_values, consumed_keys, "w-mood", POS_MODEL.w_mood);
+    maybe_override_choice(arg_values, consumed_keys, "max-daily-ls-uplift", POS_MODEL.max_daily_ls_uplift);
+
+    maybe_override_choice(arg_values, consumed_keys, "discount-rate-choices", NEG_MODEL.discount_rate_choices);
+    maybe_override_choice(arg_values, consumed_keys, "grams-ethanol-per-standard-drink-choices", NEG_MODEL.grams_ethanol_per_standard_drink_choices);
+    maybe_override_choice(arg_values, consumed_keys, "qaly-to-wellby-factor-choices", NEG_MODEL.qaly_to_wellby_factor_choices);
+    maybe_override_choice(arg_values, consumed_keys, "causal-weight-choices", NEG_MODEL.causal_weight_choices);
+    maybe_override_choice(arg_values, consumed_keys, "binge-threshold-drinks-choices", NEG_MODEL.binge_threshold_drinks_choices);
+    maybe_override_choice(arg_values, consumed_keys, "high-intensity-multiplier-choices", NEG_MODEL.high_intensity_multiplier_choices);
+    maybe_override_choice(arg_values, consumed_keys, "latency-half-life-years-choices", NEG_MODEL.latency_half_life_years_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cancer-latency-half-life-years-choices", NEG_MODEL.cancer_latency_half_life_years_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cirrhosis-latency-half-life-years-choices", NEG_MODEL.cirrhosis_latency_half_life_years_choices);
+    maybe_override_choice(arg_values, consumed_keys, "traffic-injury-rr-per-10g-choices", NEG_MODEL.traffic_injury_rr_per_10g_choices);
+    maybe_override_choice(arg_values, consumed_keys, "nontraffic-injury-rr-per-10g-choices", NEG_MODEL.nontraffic_injury_rr_per_10g_choices);
+    maybe_override_choice(arg_values, consumed_keys, "intentional-injury-rr-per-drink-choices", NEG_MODEL.intentional_injury_rr_per_drink_choices);
+    maybe_override_choice(arg_values, consumed_keys, "injury-baseline-prob-per-drinking-day-choices", NEG_MODEL.injury_baseline_prob_per_drinking_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "violence-baseline-prob-per-binge-day-choices", NEG_MODEL.violence_baseline_prob_per_binge_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "injury-daly-per-nonfatal-event-choices", NEG_MODEL.injury_daly_per_nonfatal_event_choices);
+    maybe_override_choice(arg_values, consumed_keys, "injury-case-fatality-choices", NEG_MODEL.injury_case_fatality_choices);
+    maybe_override_choice(arg_values, consumed_keys, "injury-daly-per-fatal-event-choices", NEG_MODEL.injury_daly_per_fatal_event_choices);
+    maybe_override_choice(arg_values, consumed_keys, "traffic-injury-externality-multiplier-choices", NEG_MODEL.traffic_injury_externality_multiplier_choices);
+    maybe_override_choice(arg_values, consumed_keys, "poisoning-prob-per-high-intensity-day-choices", NEG_MODEL.poisoning_prob_per_high_intensity_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "poisoning-case-fatality-choices", NEG_MODEL.poisoning_case_fatality_choices);
+    maybe_override_choice(arg_values, consumed_keys, "poisoning-daly-nonfatal-choices", NEG_MODEL.poisoning_daly_nonfatal_choices);
+    maybe_override_choice(arg_values, consumed_keys, "hangover-prob-given-binge-choices", NEG_MODEL.hangover_prob_given_binge_choices);
+    maybe_override_choice(arg_values, consumed_keys, "hangover-ls-loss-per-day-choices", NEG_MODEL.hangover_ls_loss_per_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "hangover-duration-days-choices", NEG_MODEL.hangover_duration_days_choices);
+    maybe_override_choice(arg_values, consumed_keys, "breast-cancer-rr-per-10g-day-choices", NEG_MODEL.breast_cancer_rr_per_10g_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "all-cancer-rr-per-10g-day-choices", NEG_MODEL.all_cancer_rr_per_10g_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cancer-causal-weight-choices", NEG_MODEL.cancer_causal_weight_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cirrhosis-rr-mortality-at-25g-choices", NEG_MODEL.cirrhosis_rr_mortality_at_25g_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cirrhosis-rr-mortality-at-50g-choices", NEG_MODEL.cirrhosis_rr_mortality_at_50g_choices);
+    maybe_override_choice(arg_values, consumed_keys, "cirrhosis-rr-mortality-at-100g-choices", NEG_MODEL.cirrhosis_rr_mortality_at_100g_choices);
+    maybe_override_choice(arg_values, consumed_keys, "af-rr-per-drink-day-choices", NEG_MODEL.af_rr_per_drink_day_choices);
+    maybe_override_choice(arg_values, consumed_keys, "include-ihd-protection-choices", NEG_MODEL.include_ihd_protection_choices);
+    maybe_override_choice(arg_values, consumed_keys, "ihd-protective-rr-nadir-choices", NEG_MODEL.ihd_protective_rr_nadir_choices);
+    maybe_override_choice(arg_values, consumed_keys, "binge-negates-ihd-protection-choices", NEG_MODEL.binge_negates_ihd_protection_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-onset-base-prob-per-year-choices", NEG_MODEL.aud_onset_base_prob_per_year_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-remission-prob-per-year-choices", NEG_MODEL.aud_remission_prob_per_year_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-relapse-prob-per-year-if-abstinent-choices", NEG_MODEL.aud_relapse_prob_per_year_if_abstinent_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-relapse-multiplier-if-risk-drinking-choices", NEG_MODEL.aud_relapse_multiplier_if_risk_drinking_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-disability-weight-choices", NEG_MODEL.aud_disability_weight_choices);
+    maybe_override_choice(arg_values, consumed_keys, "aud-depression-ls-addon-choices", NEG_MODEL.aud_depression_ls_addon_choices);
+    maybe_override_choice(arg_values, consumed_keys, "mental-health-causal-weight-choices", NEG_MODEL.mental_health_causal_weight_choices);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-daly-rate-all-cancer-choices", NEG_MODEL.baseline_daly_rate_all_cancer_choices);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-daly-rate-cirrhosis-choices", NEG_MODEL.baseline_daly_rate_cirrhosis_choices);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-daly-rate-af-choices", NEG_MODEL.baseline_daly_rate_af_choices);
+    maybe_override_choice(arg_values, consumed_keys, "baseline-daly-rate-ihd-choices", NEG_MODEL.baseline_daly_rate_ihd_choices);
+
+    for (const auto& kv : arg_values) {
+        if (consumed_keys.find(kv.first) == consumed_keys.end()) {
+            throw std::runtime_error("Unknown choice parameter: --" + kv.first + " (use --list-choice-params)");
+        }
+    }
+}
+
+void print_choice_param_names() {
+    std::cout << "Choice parameters that accept comma-separated lists:\n"
+              << "  --p-social-day\n"
+              << "  --baseline-stress\n"
+              << "  --baseline-sociability\n"
+              << "  --social-setting-quality\n"
+              << "  --responsiveness\n"
+              << "  --saturation-rate\n"
+              << "  --ls-per-session-score\n"
+              << "  --w-enjoyment\n"
+              << "  --w-relaxation\n"
+              << "  --w-social\n"
+              << "  --w-mood\n"
+              << "  --max-daily-ls-uplift\n"
+              << "  --discount-rate-choices\n"
+              << "  --grams-ethanol-per-standard-drink-choices\n"
+              << "  --qaly-to-wellby-factor-choices\n"
+              << "  --causal-weight-choices\n"
+              << "  --binge-threshold-drinks-choices\n"
+              << "  --high-intensity-multiplier-choices\n"
+              << "  --latency-half-life-years-choices\n"
+              << "  --cancer-latency-half-life-years-choices\n"
+              << "  --cirrhosis-latency-half-life-years-choices\n"
+              << "  --traffic-injury-rr-per-10g-choices\n"
+              << "  --nontraffic-injury-rr-per-10g-choices\n"
+              << "  --intentional-injury-rr-per-drink-choices\n"
+              << "  --injury-baseline-prob-per-drinking-day-choices\n"
+              << "  --violence-baseline-prob-per-binge-day-choices\n"
+              << "  --injury-daly-per-nonfatal-event-choices\n"
+              << "  --injury-case-fatality-choices\n"
+              << "  --injury-daly-per-fatal-event-choices\n"
+              << "  --traffic-injury-externality-multiplier-choices\n"
+              << "  --poisoning-prob-per-high-intensity-day-choices\n"
+              << "  --poisoning-case-fatality-choices\n"
+              << "  --poisoning-daly-nonfatal-choices\n"
+              << "  --hangover-prob-given-binge-choices\n"
+              << "  --hangover-ls-loss-per-day-choices\n"
+              << "  --hangover-duration-days-choices\n"
+              << "  --breast-cancer-rr-per-10g-day-choices\n"
+              << "  --all-cancer-rr-per-10g-day-choices\n"
+              << "  --cancer-causal-weight-choices\n"
+              << "  --cirrhosis-rr-mortality-at-25g-choices\n"
+              << "  --cirrhosis-rr-mortality-at-50g-choices\n"
+              << "  --cirrhosis-rr-mortality-at-100g-choices\n"
+              << "  --af-rr-per-drink-day-choices\n"
+              << "  --include-ihd-protection-choices\n"
+              << "  --ihd-protective-rr-nadir-choices\n"
+              << "  --binge-negates-ihd-protection-choices\n"
+              << "  --aud-onset-base-prob-per-year-choices\n"
+              << "  --aud-remission-prob-per-year-choices\n"
+              << "  --aud-relapse-prob-per-year-if-abstinent-choices\n"
+              << "  --aud-relapse-multiplier-if-risk-drinking-choices\n"
+              << "  --aud-disability-weight-choices\n"
+              << "  --aud-depression-ls-addon-choices\n"
+              << "  --mental-health-causal-weight-choices\n"
+              << "  --baseline-daly-rate-all-cancer-choices\n"
+              << "  --baseline-daly-rate-cirrhosis-choices\n"
+              << "  --baseline-daly-rate-af-choices\n"
+              << "  --baseline-daly-rate-ihd-choices\n";
 }
 
 int main(int argc, char** argv) {
@@ -943,6 +1142,7 @@ int main(int argc, char** argv) {
     std::string hist_data_out;
     double sweep_min = 0.0, sweep_max = 8.0, sweep_step = 0.25;
     int runs_per_point = -1;
+    std::unordered_map<std::string, std::string> choice_overrides;
 
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
@@ -958,9 +1158,14 @@ int main(int argc, char** argv) {
         else if (a == "--runs-per-point") runs_per_point = std::stoi(need(a));
         else if (a == "--print-hist-data") print_hist_data = true;
         else if (a == "--hist-data-out") hist_data_out = need(a);
+        else if (a == "--list-choice-params") { print_choice_param_names(); return 0; }
         else if (a == "--help") { usage(); return 0; }
-        else throw std::runtime_error("Unknown argument: " + a);
+        else if (a.rfind("--", 0) == 0) {
+            choice_overrides[a.substr(2)] = need(a);
+        } else throw std::runtime_error("Unknown argument: " + a);
     }
+
+    apply_choice_overrides(choice_overrides);
 
     if (SCRIPT.mode != "expected" && SCRIPT.mode != "daily") throw std::runtime_error("--mode must be expected or daily");
 
