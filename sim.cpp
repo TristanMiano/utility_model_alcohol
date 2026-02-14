@@ -558,7 +558,7 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         std::bernoulli_distribution social_draw(pos_person.p_social_day);
         bool social_today = social_draw(RNG);
         st.pos_ls = daily_positive_ls_uplift_det(pos_person, st.drinks_today, social_today);
-        pos_total += disc * st.pos_ls;
+        pos_total += disc * (st.pos_ls / SCRIPT.days_per_year);
 
         int grams_today = st.drinks_today * neg.grams_per_drink;
         life_state.ema_g = a_g * life_state.ema_g + (1.0 - a_g) * grams_today;
