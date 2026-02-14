@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <exception>
@@ -330,7 +331,22 @@ double rr_from_rr10(double rr10, double grams_per_day) {
     return std::pow(rr10, grams_per_day / 10.0);
 }
 
-std::tuple<double, double, double, double, double> annual_negative_utilons_expected(
+struct AnnualNegBreakdown {
+    double total = 0.0;
+    double acute = 0.0;
+    double hang = 0.0;
+    double chronic = 0.0;
+    double ihd = 0.0;
+    double acute_traffic = 0.0;
+    double acute_nontraffic = 0.0;
+    double acute_violence = 0.0;
+    double acute_poison = 0.0;
+    double chronic_cancer = 0.0;
+    double chronic_cirrhosis = 0.0;
+    double chronic_af = 0.0;
+};
+
+AnnualNegBreakdown annual_negative_utilons_expected(
     const std::vector<double>& pmf,
     const NegParams& n,
     double ema_g,
@@ -366,7 +382,11 @@ std::tuple<double, double, double, double, double> annual_negative_utilons_expec
     double daly_poison = (1.0 - n.poison_case_fatality) * n.poison_daly_nonfatal + n.poison_case_fatality * n.daly_fatal_injury;
     double poisoning_dalys = poisoning_events * daly_poison;
 
-    double acute_utilons = (traffic_dalys + nontraffic_dalys + violence_dalys + poisoning_dalys) * n.qaly_to_wellby * n.causal_weight;
+    double acute_traffic_utilons = traffic_dalys * n.qaly_to_wellby * n.causal_weight;
+    double acute_nontraffic_utilons = nontraffic_dalys * n.qaly_to_wellby * n.causal_weight;
+    double acute_violence_utilons = violence_dalys * n.qaly_to_wellby * n.causal_weight;
+    double acute_poison_utilons = poisoning_dalys * n.qaly_to_wellby * n.causal_weight;
+    double acute_utilons = acute_traffic_utilons + acute_nontraffic_utilons + acute_violence_utilons + acute_poison_utilons;
     double hang_days = dpy * p_binge * n.p_hangover_given_binge * n.hangover_duration_days;
     double hang_utilons = (hang_days / dpy) * n.hangover_ls_loss_per_day;
 
@@ -384,7 +404,20 @@ std::tuple<double, double, double, double, double> annual_negative_utilons_expec
         double ihd_rr = (n.binge_negates_ihd && p_binge > 0.0) ? 1.0 : n.ihd_rr_nadir;
         ihd_term = n.baseline_daly_ihd * (ihd_rr - 1.0) * n.qaly_to_wellby * n.causal_weight;
     }
-    return {acute_utilons + hang_utilons + chronic_utilons, acute_utilons, hang_utilons, chronic_utilons, ihd_term};
+    return {
+        acute_utilons + hang_utilons + chronic_utilons,
+        acute_utilons,
+        hang_utilons,
+        chronic_utilons,
+        ihd_term,
+        acute_traffic_utilons,
+        acute_nontraffic_utilons,
+        acute_violence_utilons,
+        acute_poison_utilons,
+        cancer_utilons,
+        cirr_utilons,
+        af_utilons,
+    };
 }
 
 double aud_or_multiplier_from_risk_days_per_year(double risk_days) {
@@ -458,6 +491,10 @@ struct DailyEventResult {
     bool poison_event = false;
     int acute_event_count = 0;
     double acute_utilons = 0.0;
+    double acute_traffic_utilons = 0.0;
+    double acute_nontraffic_utilons = 0.0;
+    double acute_violence_utilons = 0.0;
+    double acute_poison_utilons = 0.0;
     double hang_utilons = 0.0;
     bool fatal_event = false;
 };
@@ -496,13 +533,14 @@ DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, L
         static_cast<int>(out.violence_event) + static_cast<int>(out.poison_event);
 
     double daly_injury = (1.0 - neg.injury_case_fatality) * neg.daly_nonfatal_injury + neg.injury_case_fatality * neg.daly_fatal_injury;
-    if (out.traffic_event) out.acute_utilons += daly_injury * (1.0 + neg.traffic_externality_multiplier) * neg.qaly_to_wellby * neg.causal_weight;
-    if (out.nontraffic_event) out.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
-    if (out.violence_event) out.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.traffic_event) out.acute_traffic_utilons += daly_injury * (1.0 + neg.traffic_externality_multiplier) * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.nontraffic_event) out.acute_nontraffic_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+    if (out.violence_event) out.acute_violence_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
     if (out.poison_event) {
         double daly_poison = (1.0 - neg.poison_case_fatality) * neg.poison_daly_nonfatal + neg.poison_case_fatality * neg.daly_fatal_injury;
-        out.acute_utilons += daly_poison * neg.qaly_to_wellby * neg.causal_weight;
+        out.acute_poison_utilons += daly_poison * neg.qaly_to_wellby * neg.causal_weight;
     }
+    out.acute_utilons = out.acute_traffic_utilons + out.acute_nontraffic_utilons + out.acute_violence_utilons + out.acute_poison_utilons;
 
     if (is_binge) {
         std::bernoulli_distribution hang_draw(std::clamp(neg.p_hangover_given_binge, 0.0, 1.0));
@@ -525,7 +563,11 @@ DailyEventResult simulate_daily_events(int drinks_today, const NegParams& neg, L
     return out;
 }
 
-struct SimOut { double pos, neg, net, acute, hang, chronic, aud, ihd; };
+struct SimOut {
+    double pos, neg, net, acute, hang, chronic, aud, ihd;
+    double acute_traffic, acute_nontraffic, acute_violence, acute_poison;
+    double chronic_cancer, chronic_cirrhosis, chronic_af;
+};
 
 SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) {
     int total_days = SCRIPT.years * SCRIPT.days_per_year;
@@ -540,6 +582,8 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
     LifeState life_state;
 
     double pos_total=0.0, neg_total=0.0, neg_acute=0.0, neg_hang=0.0, neg_chronic=0.0, ihd_total=0.0, neg_aud=0.0;
+    double neg_acute_traffic=0.0, neg_acute_nontraffic=0.0, neg_acute_violence=0.0, neg_acute_poison=0.0;
+    double neg_chronic_cancer=0.0, neg_chronic_cirrhosis=0.0, neg_chronic_af=0.0;
     std::uniform_real_distribution<double> u01(0.0, 1.0);
 
     for (int day = 0; day < total_days; ++day) {
@@ -579,6 +623,10 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         st.acute_event_count = day_events.acute_event_count;
         st.acute_utilons = day_events.acute_utilons;
         st.hang_utilons = day_events.hang_utilons;
+        neg_acute_traffic += disc * day_events.acute_traffic_utilons;
+        neg_acute_nontraffic += disc * day_events.acute_nontraffic_utilons;
+        neg_acute_violence += disc * day_events.acute_violence_utilons;
+        neg_acute_poison += disc * day_events.acute_poison_utilons;
 
         double rr_cancer = rr_from_rr10(neg.rr10_all_cancer, life_state.ema_ca);
         double cancer_utilons_year = neg.baseline_daly_all_cancer * std::max(0.0, rr_cancer - 1.0) * neg.qaly_to_wellby * neg.cancer_causal_weight;
@@ -587,6 +635,9 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
         double drinks_equiv = life_state.ema_g / std::max(1e-9, static_cast<double>(neg.grams_per_drink));
         double rr_af = std::pow(neg.rr_af_per_drink, drinks_equiv);
         double af_utilons_year = neg.baseline_daly_af * std::max(0.0, rr_af - 1.0) * neg.qaly_to_wellby * neg.causal_weight;
+        neg_chronic_cancer += disc * (cancer_utilons_year / SCRIPT.days_per_year);
+        neg_chronic_cirrhosis += disc * (cirr_utilons_year / SCRIPT.days_per_year);
+        neg_chronic_af += disc * (af_utilons_year / SCRIPT.days_per_year);
         st.chronic_utilons = (cancer_utilons_year + cirr_utilons_year + af_utilons_year) / SCRIPT.days_per_year;
 
         if (neg.include_ihd_protection) {
@@ -640,7 +691,11 @@ SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) 
     }
 
     neg_total += neg_aud;
-    return {pos_total, neg_total, pos_total-neg_total, neg_acute, neg_hang, neg_chronic, neg_aud, ihd_total};
+    return {
+        pos_total, neg_total, pos_total-neg_total, neg_acute, neg_hang, neg_chronic, neg_aud, ihd_total,
+        neg_acute_traffic, neg_acute_nontraffic, neg_acute_violence, neg_acute_poison,
+        neg_chronic_cancer, neg_chronic_cirrhosis, neg_chronic_af,
+    };
 }
 
 SimOut simulate_one_person() {
@@ -656,6 +711,8 @@ SimOut simulate_one_person() {
 
     double daily_pos_ls = expected_daily_positive_ls(pos_person, pmf);
     double pos_total=0, neg_total=0, neg_acute=0, neg_hang=0, neg_chronic=0, ihd_total=0;
+    double neg_acute_traffic=0.0, neg_acute_nontraffic=0.0, neg_acute_violence=0.0, neg_acute_poison=0.0;
+    double neg_chronic_cancer=0.0, neg_chronic_cirrhosis=0.0, neg_chronic_af=0.0;
     double ema_g=0, ema_ca=0, ema_ci=0;
 
     auto alpha_from_half_life_days = [](double H_years) {
@@ -697,16 +754,91 @@ SimOut simulate_one_person() {
         double ema_ca_year = ema_ca_sum / static_cast<double>(SCRIPT.days_per_year);
         double ema_ci_year = ema_ci_sum / static_cast<double>(SCRIPT.days_per_year);
 
-        auto [neg_year, acute_u, hang_u, chronic_u, ihd_term] = annual_negative_utilons_expected(
+        AnnualNegBreakdown year_breakdown = annual_negative_utilons_expected(
             pmf, neg, ema_g_year, ema_ca_year, ema_ci_year, p_binge_year, p_hi_year);
-        neg_total += disc * neg_year;
-        neg_acute += disc * acute_u;
-        neg_hang += disc * hang_u;
-        neg_chronic += disc * chronic_u;
-        ihd_total += disc * ihd_term;
+        neg_total += disc * year_breakdown.total;
+        neg_acute += disc * year_breakdown.acute;
+        neg_hang += disc * year_breakdown.hang;
+        neg_chronic += disc * year_breakdown.chronic;
+        ihd_total += disc * year_breakdown.ihd;
+        neg_acute_traffic += disc * year_breakdown.acute_traffic;
+        neg_acute_nontraffic += disc * year_breakdown.acute_nontraffic;
+        neg_acute_violence += disc * year_breakdown.acute_violence;
+        neg_acute_poison += disc * year_breakdown.acute_poison;
+        neg_chronic_cancer += disc * year_breakdown.chronic_cancer;
+        neg_chronic_cirrhosis += disc * year_breakdown.chronic_cirrhosis;
+        neg_chronic_af += disc * year_breakdown.chronic_af;
     }
     neg_total += neg_aud;
-    return {pos_total, neg_total, pos_total-neg_total, neg_acute, neg_hang, neg_chronic, neg_aud, ihd_total};
+    return {
+        pos_total, neg_total, pos_total-neg_total, neg_acute, neg_hang, neg_chronic, neg_aud, ihd_total,
+        neg_acute_traffic, neg_acute_nontraffic, neg_acute_violence, neg_acute_poison,
+        neg_chronic_cancer, neg_chronic_cirrhosis, neg_chronic_af,
+    };
+}
+
+void print_event_share_summary_table(const std::vector<SimOut>& runs) {
+    if (runs.empty()) return;
+
+    struct RankedRun { double net = 0.0; std::array<double, 9> shares{}; };
+    std::vector<RankedRun> ranked;
+    ranked.reserve(runs.size());
+
+    for (const auto& r : runs) {
+        std::array<double, 9> comps{
+            r.acute_traffic,
+            r.acute_nontraffic,
+            r.acute_violence,
+            r.acute_poison,
+            r.hang,
+            r.chronic_cancer,
+            r.chronic_cirrhosis,
+            r.chronic_af,
+            r.aud,
+        };
+        double denom = std::accumulate(comps.begin(), comps.end(), 0.0);
+        RankedRun rr;
+        rr.net = r.net;
+        if (denom > 0.0) {
+            for (size_t i = 0; i < comps.size(); ++i) rr.shares[i] = 100.0 * comps[i] / denom;
+        }
+        ranked.push_back(rr);
+    }
+
+    std::sort(ranked.begin(), ranked.end(), [](const RankedRun& a, const RankedRun& b) { return a.net < b.net; });
+
+    std::vector<std::string> labels{
+        "acute_traffic", "acute_nontraffic", "acute_violence", "acute_poison",
+        "hangover", "chronic_cancer", "chronic_cirrhosis", "chronic_af", "aud",
+    };
+
+    std::cout << "\n=== Event contribution summary by net-utilon decile ===\n";
+    std::cout << "(Rows are sorted by run net utilons; cells show mean % contribution to total negative utility.)\n\n";
+    std::cout << std::left << std::setw(8) << "Decile" << std::setw(10) << "n";
+    for (const auto& lab : labels) std::cout << std::setw(19) << lab;
+    std::cout << "\n";
+
+    for (int d = 0; d < 10; ++d) {
+        size_t start = (d * ranked.size()) / 10;
+        size_t end = ((d + 1) * ranked.size()) / 10;
+        if (end <= start) continue;
+        std::array<double, 9> avg{};
+        for (size_t i = start; i < end; ++i) {
+            for (size_t j = 0; j < avg.size(); ++j) avg[j] += ranked[i].shares[j];
+        }
+        double n = static_cast<double>(end - start);
+        for (double& v : avg) v /= n;
+
+        std::ostringstream dec_label;
+        dec_label << "D" << (d + 1);
+        std::cout << std::left << std::setw(8) << dec_label.str() << std::setw(10) << static_cast<int>(n);
+        for (double v : avg) {
+            std::ostringstream cell;
+            cell << std::fixed << std::setprecision(1) << v << "%";
+            std::cout << std::setw(19) << cell.str();
+        }
+        std::cout << "\n";
+    }
 }
 
 double mean(const std::vector<double>& xs){ return xs.empty()?std::numeric_limits<double>::quiet_NaN():std::accumulate(xs.begin(), xs.end(), 0.0)/xs.size(); }
@@ -766,6 +898,7 @@ int main(int argc, char** argv) {
         int rpp = runs_per_point > 0 ? runs_per_point : SCRIPT.num_runs;
         std::vector<double> medians;
         std::vector<std::pair<double, double>> pairs;
+        std::vector<SimOut> sweep_runs;
         std::cout << "=== Sweep: median(net utilons) by drinks/day ===\n";
         for (int idx = 0;; ++idx) {
             double d = sweep_min + idx * sweep_step;
@@ -775,7 +908,11 @@ int main(int argc, char** argv) {
             reseed(SCRIPT.seed + idx);
             std::vector<double> nets;
             nets.reserve(SCRIPT.num_runs);
-            for (int r = 0; r < SCRIPT.num_runs; ++r) nets.push_back(simulate_one_person().net);
+            for (int r = 0; r < SCRIPT.num_runs; ++r) {
+                SimOut out = simulate_one_person();
+                nets.push_back(out.net);
+                sweep_runs.push_back(out);
+            }
             double med = percentile(nets, 50.0);
             medians.push_back(med);
             pairs.push_back({d, med});
@@ -785,19 +922,24 @@ int main(int argc, char** argv) {
         auto best = *std::max_element(pairs.begin(), pairs.end(), [](auto& a, auto& b){ return a.second < b.second; });
         std::cout << "\nBest (by median net utilons): drinks/day=" << std::setprecision(2) << best.first
                   << "  median_net=" << std::setprecision(4) << best.second << "\n";
+
+        print_event_share_summary_table(sweep_runs);
         return 0;
     }
 
     std::vector<double> pos, neg, net, acute, hang, chronic, aud, ihd;
+    std::vector<SimOut> all_runs;
     pos.reserve(SCRIPT.num_runs); neg.reserve(SCRIPT.num_runs); net.reserve(SCRIPT.num_runs);
     acute.reserve(SCRIPT.num_runs); hang.reserve(SCRIPT.num_runs); chronic.reserve(SCRIPT.num_runs);
     aud.reserve(SCRIPT.num_runs); ihd.reserve(SCRIPT.num_runs);
+    all_runs.reserve(SCRIPT.num_runs);
 
     for (int i = 0; i < SCRIPT.num_runs; ++i) {
         auto out = simulate_one_person();
         pos.push_back(out.pos); neg.push_back(out.neg); net.push_back(out.net);
         acute.push_back(out.acute); hang.push_back(out.hang); chronic.push_back(out.chronic);
         aud.push_back(out.aud); ihd.push_back(out.ihd);
+        all_runs.push_back(out);
     }
 
     std::cout << "=== Lifetime Utilon Simulation (Positive + Negative) ===\n";
@@ -817,6 +959,8 @@ int main(int argc, char** argv) {
     summarize("Negative breakdown: chronic health proxies", chronic);
     summarize("Negative breakdown: AUD Markov", aud);
     summarize("IHD protection term (separate; not netted by default)", ihd);
+
+    print_event_share_summary_table(all_runs);
 
     std::cout << "\n[warn] Histogram plotting is not implemented in C++ version.\n";
     return 0;
