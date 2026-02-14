@@ -331,12 +331,18 @@ double rr_from_rr10(double rr10, double grams_per_day) {
 }
 
 std::tuple<double, double, double, double, double> annual_negative_utilons_expected(
-    const std::vector<double>& pmf, const NegParams& n, double ema_g, double ema_cancer, double ema_cirr) {
+    const std::vector<double>& pmf,
+    const NegParams& n,
+    double ema_g,
+    double ema_cancer,
+    double ema_cirr,
+    double p_binge_realized = -1.0,
+    double p_hi_realized = -1.0) {
     const int dpy = SCRIPT.days_per_year;
     int binge = n.binge_threshold;
     int hi = n.high_intensity_multiplier * binge;
-    double p_binge = prob_from_pmf(pmf, [&](int d){ return d >= binge;});
-    double p_hi = prob_from_pmf(pmf, [&](int d){ return d >= hi;});
+    double p_binge = p_binge_realized >= 0.0 ? p_binge_realized : prob_from_pmf(pmf, [&](int d){ return d >= binge;});
+    double p_hi = p_hi_realized >= 0.0 ? p_hi_realized : prob_from_pmf(pmf, [&](int d){ return d >= hi;});
 
     auto grams_today = [&](int d){ return d * n.grams_per_drink; };
     auto rr_traffic_d = [&](int d){ return d <= 0 ? 0.0 : rr_from_rr10(n.rr10_traffic, grams_today(d)); };
@@ -650,23 +656,49 @@ SimOut simulate_one_person() {
 
     double daily_pos_ls = expected_daily_positive_ls(pos_person, pmf);
     double pos_total=0, neg_total=0, neg_acute=0, neg_hang=0, neg_chronic=0, ihd_total=0;
-    double gbar = SCRIPT.drinks_per_day * neg.grams_per_drink;
     double ema_g=0, ema_ca=0, ema_ci=0;
 
-    auto alpha_from_half_life = [](double H){ return H <= 0 ? 0.0 : std::exp(-std::log(2.0)/H); };
-    double a_g = alpha_from_half_life(neg.half_life_chronic);
-    double a_ca = alpha_from_half_life(neg.half_life_cancer);
-    double a_ci = alpha_from_half_life(neg.half_life_cirrhosis);
+    auto alpha_from_half_life_days = [](double H_years) {
+        if (H_years <= 0.0) return 0.0;
+        return std::exp(-std::log(2.0) / (H_years * SCRIPT.days_per_year));
+    };
+    double a_g = alpha_from_half_life_days(neg.half_life_chronic);
+    double a_ca = alpha_from_half_life_days(neg.half_life_cancer);
+    double a_ci = alpha_from_half_life_days(neg.half_life_cirrhosis);
 
     double neg_aud = simulate_aud_lifetime_utilons(pmf, neg);
 
     for (int y = 0; y < SCRIPT.years; ++y) {
         double disc = discount_factor_continuous(SCRIPT.discount_rate_annual, y + 0.5);
         pos_total += disc * daily_pos_ls;
-        ema_g = a_g * ema_g + (1.0 - a_g) * gbar;
-        ema_ca = a_ca * ema_ca + (1.0 - a_ca) * gbar;
-        ema_ci = a_ci * ema_ci + (1.0 - a_ci) * gbar;
-        auto [neg_year, acute_u, hang_u, chronic_u, ihd_term] = annual_negative_utilons_expected(pmf, neg, ema_g, ema_ca, ema_ci);
+
+        int binge_days = 0;
+        int hi_days = 0;
+        double ema_g_sum = 0.0;
+        double ema_ca_sum = 0.0;
+        double ema_ci_sum = 0.0;
+        int hi_threshold = neg.high_intensity_multiplier * neg.binge_threshold;
+        for (int d = 0; d < SCRIPT.days_per_year; ++d) {
+            int drinks_today = sample_drinks_today(SCRIPT.drinks_per_day);
+            int grams_today = drinks_today * neg.grams_per_drink;
+            ema_g = a_g * ema_g + (1.0 - a_g) * grams_today;
+            ema_ca = a_ca * ema_ca + (1.0 - a_ca) * grams_today;
+            ema_ci = a_ci * ema_ci + (1.0 - a_ci) * grams_today;
+            ema_g_sum += ema_g;
+            ema_ca_sum += ema_ca;
+            ema_ci_sum += ema_ci;
+            if (drinks_today >= neg.binge_threshold) ++binge_days;
+            if (drinks_today >= hi_threshold) ++hi_days;
+        }
+
+        double p_binge_year = binge_days / static_cast<double>(SCRIPT.days_per_year);
+        double p_hi_year = hi_days / static_cast<double>(SCRIPT.days_per_year);
+        double ema_g_year = ema_g_sum / static_cast<double>(SCRIPT.days_per_year);
+        double ema_ca_year = ema_ca_sum / static_cast<double>(SCRIPT.days_per_year);
+        double ema_ci_year = ema_ci_sum / static_cast<double>(SCRIPT.days_per_year);
+
+        auto [neg_year, acute_u, hang_u, chronic_u, ihd_term] = annual_negative_utilons_expected(
+            pmf, neg, ema_g_year, ema_ca_year, ema_ci_year, p_binge_year, p_hi_year);
         neg_total += disc * neg_year;
         neg_acute += disc * acute_u;
         neg_hang += disc * hang_u;
