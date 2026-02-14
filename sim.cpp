@@ -21,6 +21,7 @@ struct ScriptConfig {
     int days_per_year = 365;
     double drinks_per_day = 1.5;
     std::string day_count_model = "poisson";
+    std::string mode = "expected";
     double two_point_p_zero = 0.5;
     int two_point_high_drinks = 6;
     int max_drinks_cap = 12;
@@ -109,6 +110,27 @@ struct NegModel {
 
 static PosModel POS_MODEL;
 static NegModel NEG_MODEL;
+
+int sample_drinks_today(double mean_drinks_per_day) {
+    int cap = SCRIPT.max_drinks_cap;
+    if (mean_drinks_per_day <= 0.0) return 0;
+    if (SCRIPT.day_count_model == "constant") {
+        return std::clamp(static_cast<int>(std::llround(mean_drinks_per_day)), 0, cap);
+    }
+    if (SCRIPT.day_count_model == "two_point") {
+        int hi = std::clamp(SCRIPT.two_point_high_drinks, 0, cap);
+        if (hi == 0) return 0;
+        double p0_adj = 1.0 - (mean_drinks_per_day / hi);
+        p0_adj = std::clamp(p0_adj, 0.0, 1.0);
+        std::bernoulli_distribution draw_hi(1.0 - p0_adj);
+        return draw_hi(RNG) ? hi : 0;
+    }
+    if (SCRIPT.day_count_model == "poisson") {
+        std::poisson_distribution<int> draw(std::max(0.0, mean_drinks_per_day));
+        return std::clamp(draw(RNG), 0, cap);
+    }
+    throw std::runtime_error("Unknown day_count_model");
+}
 
 std::vector<double> drinks_pmf(double mean_drinks_per_day) {
     int cap = SCRIPT.max_drinks_cap;
@@ -397,13 +419,171 @@ double simulate_aud_lifetime_utilons(const std::vector<double>& pmf, const NegPa
     return total * n.causal_weight;
 }
 
+struct DailyState {
+    int drinks_today = 0;
+    bool traffic_event = false;
+    bool nontraffic_event = false;
+    bool violence_event = false;
+    bool poison_event = false;
+    int acute_event_count = 0;
+    bool aud_active = false;
+    bool alive = true;
+    double pos_ls = 0.0;
+    double acute_utilons = 0.0;
+    double hang_utilons = 0.0;
+    double chronic_utilons = 0.0;
+    double ihd_term = 0.0;
+};
+
 struct SimOut { double pos, neg, net, acute, hang, chronic, aud, ihd; };
 
+SimOut simulate_life_rollout(const PosPerson& pos_person, const NegParams& neg) {
+    int total_days = SCRIPT.years * SCRIPT.days_per_year;
+    std::vector<DailyState> days;
+    days.reserve(total_days);
+
+    auto alpha_from_half_life = [](double H){ return H <= 0 ? 0.0 : std::exp(-std::log(2.0)/H); };
+    double a_g = alpha_from_half_life(neg.half_life_chronic);
+    double a_ca = alpha_from_half_life(neg.half_life_cancer);
+    double a_ci = alpha_from_half_life(neg.half_life_cirrhosis);
+
+    double ema_g=0.0, ema_ca=0.0, ema_ci=0.0;
+    int aud_state = 0;
+    int hang_days_remaining = 0;
+
+    double pos_total=0.0, neg_total=0.0, neg_acute=0.0, neg_hang=0.0, neg_chronic=0.0, ihd_total=0.0, neg_aud=0.0;
+    std::uniform_real_distribution<double> u01(0.0, 1.0);
+
+    for (int day = 0; day < total_days; ++day) {
+        DailyState st;
+        st.drinks_today = sample_drinks_today(SCRIPT.drinks_per_day);
+        double t_years = (day + 0.5) / static_cast<double>(SCRIPT.days_per_year);
+        double disc = discount_factor_continuous(SCRIPT.discount_rate_annual, t_years);
+
+        std::bernoulli_distribution social_draw(pos_person.p_social_day);
+        bool social_today = social_draw(RNG);
+        st.pos_ls = daily_positive_ls_uplift_det(pos_person, st.drinks_today, social_today);
+        pos_total += disc * st.pos_ls;
+
+        int grams_today = st.drinks_today * neg.grams_per_drink;
+        ema_g = a_g * ema_g + (1.0 - a_g) * grams_today;
+        ema_ca = a_ca * ema_ca + (1.0 - a_ca) * grams_today;
+        ema_ci = a_ci * ema_ci + (1.0 - a_ci) * grams_today;
+
+        bool is_drinking = st.drinks_today > 0;
+        bool is_binge = st.drinks_today >= neg.binge_threshold;
+        bool is_hi = st.drinks_today >= neg.high_intensity_multiplier * neg.binge_threshold;
+
+        double p_traffic = 0.0;
+        double p_nontraffic = 0.0;
+        if (is_drinking) {
+            p_traffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_traffic, grams_today), 0.0, 1.0);
+            p_nontraffic = std::clamp(neg.p0_injury_per_drinking_day * rr_from_rr10(neg.rr10_nontraffic, grams_today), 0.0, 1.0);
+        }
+        std::bernoulli_distribution traffic_draw(p_traffic);
+        std::bernoulli_distribution nontraffic_draw(p_nontraffic);
+        st.traffic_event = traffic_draw(RNG);
+        st.nontraffic_event = nontraffic_draw(RNG);
+
+        double p_violence = is_binge ? std::clamp(neg.p0_violence_per_binge_day * std::pow(neg.rr_per_drink_intentional, st.drinks_today), 0.0, 1.0) : 0.0;
+        std::bernoulli_distribution violence_draw(p_violence);
+        st.violence_event = violence_draw(RNG);
+
+        double p_poison = is_hi ? std::clamp(neg.p_poison_per_hi_day, 0.0, 1.0) : 0.0;
+        std::bernoulli_distribution poison_draw(p_poison);
+        st.poison_event = poison_draw(RNG);
+
+        st.acute_event_count = static_cast<int>(st.traffic_event) + static_cast<int>(st.nontraffic_event) + static_cast<int>(st.violence_event) + static_cast<int>(st.poison_event);
+
+        double daly_injury = (1.0 - neg.injury_case_fatality) * neg.daly_nonfatal_injury + neg.injury_case_fatality * neg.daly_fatal_injury;
+        if (st.traffic_event) st.acute_utilons += daly_injury * (1.0 + neg.traffic_externality_multiplier) * neg.qaly_to_wellby * neg.causal_weight;
+        if (st.nontraffic_event) st.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+        if (st.violence_event) st.acute_utilons += daly_injury * neg.qaly_to_wellby * neg.causal_weight;
+        if (st.poison_event) {
+            double daly_poison = (1.0 - neg.poison_case_fatality) * neg.poison_daly_nonfatal + neg.poison_case_fatality * neg.daly_fatal_injury;
+            st.acute_utilons += daly_poison * neg.qaly_to_wellby * neg.causal_weight;
+        }
+
+        if (is_binge) {
+            std::bernoulli_distribution hang_draw(std::clamp(neg.p_hangover_given_binge, 0.0, 1.0));
+            if (hang_draw(RNG)) hang_days_remaining = std::max(hang_days_remaining, neg.hangover_duration_days);
+        }
+        if (hang_days_remaining > 0) {
+            st.hang_utilons = neg.hangover_ls_loss_per_day / SCRIPT.days_per_year;
+            --hang_days_remaining;
+        }
+
+        double rr_cancer = rr_from_rr10(neg.rr10_all_cancer, ema_ca);
+        double cancer_utilons_year = neg.baseline_daly_all_cancer * std::max(0.0, rr_cancer - 1.0) * neg.qaly_to_wellby * neg.cancer_causal_weight;
+        double rr_cirr = piecewise_log_rr(ema_ci, neg.rr_cirr_25, neg.rr_cirr_50, neg.rr_cirr_100);
+        double cirr_utilons_year = neg.baseline_daly_cirrhosis * std::max(0.0, rr_cirr - 1.0) * neg.qaly_to_wellby * neg.causal_weight;
+        double drinks_equiv = ema_g / std::max(1e-9, static_cast<double>(neg.grams_per_drink));
+        double rr_af = std::pow(neg.rr_af_per_drink, drinks_equiv);
+        double af_utilons_year = neg.baseline_daly_af * std::max(0.0, rr_af - 1.0) * neg.qaly_to_wellby * neg.causal_weight;
+        st.chronic_utilons = (cancer_utilons_year + cirr_utilons_year + af_utilons_year) / SCRIPT.days_per_year;
+
+        if (neg.include_ihd_protection) {
+            double ihd_rr = (neg.binge_negates_ihd && is_binge) ? 1.0 : neg.ihd_rr_nadir;
+            st.ihd_term = (neg.baseline_daly_ihd * (ihd_rr - 1.0) * neg.qaly_to_wellby * neg.causal_weight) / SCRIPT.days_per_year;
+        }
+
+        int day_of_year = day % SCRIPT.days_per_year;
+        if (day_of_year == 0) {
+            double risk_days = 0.0;
+            double per_year_drinks = 0.0;
+            int start = std::max(0, day - SCRIPT.days_per_year);
+            for (int k = start; k < day; ++k) {
+                per_year_drinks += days[k].drinks_today;
+                if (days[k].drinks_today >= neg.binge_threshold) risk_days += 1.0;
+            }
+            double or_mult = aud_or_multiplier_from_risk_days_per_year(risk_days);
+            double u = u01(RNG);
+            if (aud_state == 0) {
+                if (u < neg.aud_onset_base * or_mult) aud_state = 1;
+            } else if (aud_state == 1) {
+                if (u < neg.aud_remission) aud_state = 2;
+            } else {
+                double relapse = neg.aud_relapse_base * (per_year_drinks > 0.0 ? neg.aud_relapse_mult_if_risk : 1.0);
+                if (u < relapse) aud_state = 1;
+            }
+        }
+        st.aud_active = (aud_state == 1);
+        if (st.aud_active) {
+            double aud_day = (neg.aud_disability_weight * neg.qaly_to_wellby + neg.aud_depression_ls_addon * neg.mental_health_causal_weight) / SCRIPT.days_per_year;
+            neg_aud += disc * aud_day * neg.causal_weight;
+        }
+
+        pos_total += 0.0; // keep symmetry with daily accounting in local state
+        neg_acute += disc * st.acute_utilons;
+        neg_hang += disc * st.hang_utilons;
+        neg_chronic += disc * st.chronic_utilons;
+        ihd_total += disc * st.ihd_term;
+
+        neg_total += disc * (st.acute_utilons + st.hang_utilons + st.chronic_utilons);
+
+        double p_die = 0.0;
+        if (st.traffic_event || st.nontraffic_event || st.violence_event) p_die = std::max(p_die, neg.injury_case_fatality);
+        if (st.poison_event) p_die = std::max(p_die, neg.poison_case_fatality);
+        std::bernoulli_distribution death_draw(std::clamp(p_die, 0.0, 1.0));
+        st.alive = !death_draw(RNG);
+        days.push_back(st);
+        if (!st.alive) break;
+    }
+
+    neg_total += neg_aud;
+    return {pos_total, neg_total, pos_total-neg_total, neg_acute, neg_hang, neg_chronic, neg_aud, ihd_total};
+}
+
 SimOut simulate_one_person() {
-    auto pmf = drinks_pmf(SCRIPT.drinks_per_day);
-    validate_pmf(pmf, "simulate_one_person");
     PosPerson pos_person = sample_pos_person();
     NegParams neg = sample_neg_params();
+
+    if (SCRIPT.mode == "daily") {
+        return simulate_life_rollout(pos_person, neg);
+    }
+
+    auto pmf = drinks_pmf(SCRIPT.drinks_per_day);
+    validate_pmf(pmf, "simulate_one_person");
 
     double daily_pos_ls = expected_daily_positive_ls(pos_person, pmf);
     double pos_total=0, neg_total=0, neg_acute=0, neg_hang=0, neg_chronic=0, ihd_total=0;
@@ -459,7 +639,7 @@ void summarize(const std::string& label, const std::vector<double>& xs) {
 }
 
 void usage() {
-    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N]\n";
+    std::cout << "Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N]\n";
 }
 
 int main(int argc, char** argv) {
@@ -473,6 +653,7 @@ int main(int argc, char** argv) {
         if (a == "--drinks-per-day") SCRIPT.drinks_per_day = std::stod(need(a));
         else if (a == "--runs") SCRIPT.num_runs = std::stoi(need(a));
         else if (a == "--seed") SCRIPT.seed = std::stoi(need(a));
+        else if (a == "--mode") SCRIPT.mode = need(a);
         else if (a == "--sweep") sweep = true;
         else if (a == "--sweep-min") sweep_min = std::stod(need(a));
         else if (a == "--sweep-max") sweep_max = std::stod(need(a));
@@ -481,6 +662,8 @@ int main(int argc, char** argv) {
         else if (a == "--help") { usage(); return 0; }
         else throw std::runtime_error("Unknown argument: " + a);
     }
+
+    if (SCRIPT.mode != "expected" && SCRIPT.mode != "daily") throw std::runtime_error("--mode must be expected or daily");
 
     reseed(SCRIPT.seed);
 
@@ -528,7 +711,8 @@ int main(int argc, char** argv) {
     std::cout << "Horizon: " << SCRIPT.years << " years\n";
     std::cout << "Discount rate (script): " << std::fixed << std::setprecision(3) << SCRIPT.discount_rate_annual * 100.0
               << "% (continuous exp(-r*t))\n";
-    std::cout << "Exposure: drinks_per_day = " << SCRIPT.drinks_per_day << " using day_count_model=" << SCRIPT.day_count_model << "\n";
+    std::cout << "Exposure: drinks_per_day = " << SCRIPT.drinks_per_day << " using day_count_model=" << SCRIPT.day_count_model
+              << " and mode=" << SCRIPT.mode << "\n";
 
     summarize("Positive utilons (discounted lifetime)", pos);
     summarize("Negative utilons (discounted lifetime)", neg);
