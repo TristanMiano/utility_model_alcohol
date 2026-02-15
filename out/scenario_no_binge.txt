@@ -1,0 +1,119 @@
+=== Lifetime Utilon Simulation (Positive + Negative) ===
+Runs: 20000
+Seed: 201
+Horizon: 60 years
+Discount rate (script): 3.000% (continuous exp(-r*t))
+Exposure: drinks_per_day = 1.500 using day_count_model=poisson and mode=expected
+
+--- Positive utilons (discounted lifetime) ---
+Mean: 11.7471
+  p01: 2.5845
+  p05: 3.7197
+  p10: 4.5292
+  p25: 6.6001
+  p50: 10.3735
+  p75: 15.8193
+  p90: 20.9205
+  p95: 23.6944
+  p99: 30.5296
+
+--- Negative utilons (discounted lifetime) ---
+Mean: 17.2130
+  p01: 0.6542
+  p05: 1.3036
+  p10: 2.0071
+  p25: 4.2633
+  p50: 9.7899
+  p75: 21.4934
+  p90: 41.3439
+  p95: 59.2752
+  p99: 104.8903
+
+--- Net utilons = Positive - Negative (discounted lifetime) ---
+Mean: -5.4658
+  p01: -93.3490
+  p05: -48.1920
+  p10: -30.6365
+  p25: -10.8672
+  p50: 0.3663
+  p75: 6.9478
+  p90: 13.3053
+  p95: 17.1270
+  p99: 24.1358
+
+--- Negative breakdown: acute ---
+Mean: 15.7016
+  p01: 0.5322
+  p05: 1.0561
+  p10: 1.6120
+  p25: 3.4855
+  p50: 8.2488
+  p75: 19.2213
+  p90: 38.4157
+  p95: 56.9366
+  p99: 101.2753
+
+--- Negative breakdown: hangover ---
+Mean: 0.0000
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative breakdown: chronic health proxies ---
+Mean: 0.1415
+  p01: 0.0171
+  p05: 0.0275
+  p10: 0.0366
+  p25: 0.0594
+  p50: 0.1031
+  p75: 0.1831
+  p90: 0.3010
+  p95: 0.3899
+  p99: 0.5725
+
+--- Negative breakdown: AUD Markov ---
+Mean: 1.3698
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.3648
+  p90: 4.3165
+  p95: 8.3155
+  p99: 20.6740
+
+--- IHD protection term (separate; not netted by default) ---
+Mean: -0.0124
+  p01: -0.1502
+  p05: -0.0751
+  p10: -0.0438
+  p25: -0.0104
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+=== Event contribution summary by net-utilon decile ===
+(Rows are sorted by run net utilons; cells show mean % contribution to total negative utility.)
+
+Decile  n         acute_traffic      acute_nontraffic   acute_violence     acute_poison       hangover           chronic_cancer     chronic_cirrhosis  chronic_af         aud                
+D1      2000      60.2%              33.6%              0.0%               0.0%               0.0%               0.0%               0.3%               0.0%               5.9%               
+D2      2000      57.4%              32.9%              0.0%               0.0%               0.0%               0.1%               0.4%               0.0%               9.1%               
+D3      2000      55.8%              32.2%              0.0%               0.0%               0.0%               0.1%               0.6%               0.1%               11.2%              
+D4      2000      55.6%              32.8%              0.0%               0.0%               0.0%               0.2%               0.8%               0.1%               10.5%              
+D5      2000      55.6%              32.8%              0.0%               0.0%               0.0%               0.3%               1.2%               0.2%               9.9%               
+D6      2000      55.9%              33.3%              0.0%               0.0%               0.0%               0.6%               1.9%               0.3%               8.1%               
+D7      2000      56.2%              33.3%              0.0%               0.0%               0.0%               0.8%               2.3%               0.3%               7.2%               
+D8      2000      55.7%              33.3%              0.0%               0.0%               0.0%               0.8%               2.5%               0.3%               7.5%               
+D9      2000      55.8%              33.4%              0.0%               0.0%               0.0%               0.8%               2.5%               0.3%               7.2%               
+D10     2000      56.0%              33.6%              0.0%               0.0%               0.0%               1.0%               2.9%               0.4%               6.2%               
+
+Histogram data written to: /root/utility_model_alcohol/out/scenario_no_binge_hist.csv

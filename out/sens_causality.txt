@@ -1,0 +1,119 @@
+=== Lifetime Utilon Simulation (Positive + Negative) ===
+Runs: 20000
+Seed: 125
+Horizon: 60 years
+Discount rate (script): 3.000% (continuous exp(-r*t))
+Exposure: drinks_per_day = 1.500 using day_count_model=poisson and mode=expected
+
+--- Positive utilons (discounted lifetime) ---
+Mean: 11.7374
+  p01: 2.6275
+  p05: 3.7114
+  p10: 4.5741
+  p25: 6.6856
+  p50: 10.3057
+  p75: 15.7901
+  p90: 20.9192
+  p95: 23.7568
+  p99: 30.1852
+
+--- Negative utilons (discounted lifetime) ---
+Mean: 19.5971
+  p01: 0.8892
+  p05: 1.7123
+  p10: 2.5393
+  p25: 5.2230
+  p50: 12.0119
+  p75: 25.7864
+  p90: 46.4582
+  p95: 63.4396
+  p99: 103.7522
+
+--- Net utilons = Positive - Negative (discounted lifetime) ---
+Mean: -7.8596
+  p01: -93.7947
+  p05: -52.2666
+  p10: -35.7389
+  p25: -15.0842
+  p50: -1.5918
+  p75: 5.8782
+  p90: 12.2769
+  p95: 16.1580
+  p99: 23.1427
+
+--- Negative breakdown: acute ---
+Mean: 15.6462
+  p01: 0.5171
+  p05: 1.1025
+  p10: 1.6642
+  p25: 3.5536
+  p50: 8.4061
+  p75: 19.3511
+  p90: 38.8853
+  p95: 55.9403
+  p99: 96.4402
+
+--- Negative breakdown: hangover ---
+Mean: 0.1982
+  p01: 0.0078
+  p05: 0.0155
+  p10: 0.0245
+  p25: 0.0489
+  p50: 0.1073
+  p75: 0.2360
+  p90: 0.5045
+  p95: 0.6821
+  p99: 1.3070
+
+--- Negative breakdown: chronic health proxies ---
+Mean: 0.1425
+  p01: 0.0172
+  p05: 0.0281
+  p10: 0.0372
+  p25: 0.0595
+  p50: 0.1032
+  p75: 0.1830
+  p90: 0.3057
+  p95: 0.3957
+  p99: 0.5895
+
+--- Negative breakdown: AUD Markov ---
+Mean: 3.6101
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 3.6720
+  p90: 12.1500
+  p95: 19.5941
+  p99: 37.1534
+
+--- IHD protection term (separate; not netted by default) ---
+Mean: -0.0066
+  p01: -0.1252
+  p05: -0.0438
+  p10: -0.0188
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+=== Event contribution summary by net-utilon decile ===
+(Rows are sorted by run net utilons; cells show mean % contribution to total negative utility.)
+
+Decile  n         acute_traffic      acute_nontraffic   acute_violence     acute_poison       hangover           chronic_cancer     chronic_cirrhosis  chronic_af         aud                
+D1      2000      53.1%              29.2%              0.1%               0.0%               0.3%               0.0%               0.2%               0.0%               17.0%              
+D2      2000      48.9%              27.9%              0.1%               0.0%               0.6%               0.1%               0.4%               0.0%               22.0%              
+D3      2000      48.5%              28.0%              0.2%               0.0%               0.8%               0.1%               0.5%               0.1%               21.8%              
+D4      2000      48.7%              28.0%              0.2%               0.0%               1.3%               0.2%               0.7%               0.1%               20.8%              
+D5      2000      48.5%              28.2%              0.3%               0.0%               1.9%               0.2%               0.9%               0.1%               19.9%              
+D6      2000      50.2%              29.5%              0.4%               0.0%               3.1%               0.4%               1.4%               0.2%               14.9%              
+D7      2000      50.1%              29.6%              0.4%               0.0%               4.6%               0.6%               1.9%               0.2%               12.6%              
+D8      2000      50.2%              29.9%              0.4%               0.0%               4.9%               0.7%               2.2%               0.3%               11.4%              
+D9      2000      50.0%              30.1%              0.5%               0.0%               5.0%               0.7%               2.1%               0.3%               11.4%              
+D10     2000      50.6%              30.2%              0.5%               0.0%               5.9%               0.8%               2.4%               0.3%               9.2%               
+
+[info] Use --print-hist-data to print histogram bins or --hist-data-out <file.csv> to export bins for plotting.

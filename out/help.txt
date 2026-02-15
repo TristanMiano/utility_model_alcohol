@@ -1,0 +1,1 @@
+Usage: ./sim_cpp [--drinks-per-day X] [--runs N] [--seed S] [--mode expected|daily] [--sweep] [--sweep-min X --sweep-max X --sweep-step X] [--runs-per-point N] [--print-hist-data] [--hist-data-out PATH] [--<choice-param> v1,v2,...] [--list-choice-params]

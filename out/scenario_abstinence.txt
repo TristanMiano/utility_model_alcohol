@@ -1,0 +1,119 @@
+=== Lifetime Utilon Simulation (Positive + Negative) ===
+Runs: 20000
+Seed: 202
+Horizon: 60 years
+Discount rate (script): 3.000% (continuous exp(-r*t))
+Exposure: drinks_per_day = 0.000 using day_count_model=poisson and mode=expected
+
+--- Positive utilons (discounted lifetime) ---
+Mean: 0.0000
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative utilons (discounted lifetime) ---
+Mean: 1.3325
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.3268
+  p90: 4.1650
+  p95: 8.0440
+  p99: 19.7050
+
+--- Net utilons = Positive - Negative (discounted lifetime) ---
+Mean: -1.3325
+  p01: -19.7050
+  p05: -8.0440
+  p10: -4.1650
+  p25: -0.3268
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative breakdown: acute ---
+Mean: 0.0000
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative breakdown: hangover ---
+Mean: 0.0000
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative breakdown: chronic health proxies ---
+Mean: 0.0000
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+--- Negative breakdown: AUD Markov ---
+Mean: 1.3325
+  p01: 0.0000
+  p05: 0.0000
+  p10: 0.0000
+  p25: 0.0000
+  p50: 0.0000
+  p75: 0.3268
+  p90: 4.1650
+  p95: 8.0440
+  p99: 19.7050
+
+--- IHD protection term (separate; not netted by default) ---
+Mean: -0.0124
+  p01: -0.1502
+  p05: -0.0751
+  p10: -0.0417
+  p25: -0.0104
+  p50: 0.0000
+  p75: 0.0000
+  p90: 0.0000
+  p95: 0.0000
+  p99: 0.0000
+
+=== Event contribution summary by net-utilon decile ===
+(Rows are sorted by run net utilons; cells show mean % contribution to total negative utility.)
+
+Decile  n         acute_traffic      acute_nontraffic   acute_violence     acute_poison       hangover           chronic_cancer     chronic_cirrhosis  chronic_af         aud                
+D1      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               100.0%             
+D2      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               100.0%             
+D3      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               72.5%              
+D4      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D5      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D6      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D7      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D8      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D9      2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+D10     2000      0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               0.0%               
+
+Histogram data written to: /root/utility_model_alcohol/out/scenario_abstinence_hist.csv
