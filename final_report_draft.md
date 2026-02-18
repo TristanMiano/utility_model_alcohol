@@ -152,56 +152,47 @@ Given this evidence structure, the baseline positive module is intentionally mod
 
 ## 4) Negative utility module (harms)
 
-The negative module consumes the same exposure stream and produces discounted lifetime losses. Harms are organized to reduce double counting by separating acute events, next-day impairment, chronic health proxies, and AUD state burden.
+The negative module consumes the same daily exposure stream as the positive module, then maps alcohol exposure into discounted LS losses via four non-overlapping buckets: acute events, next-day impairment, chronic health burden, and AUD state burden. The implementation choice is designed to keep channels interpretable while minimizing double counting between health-state losses and direct wellbeing losses.[1][39]
 
-### 4.1 Acute injury and accident risks
+### 4.1 Acute injury, violence, and poisoning risks (event layer)
 
-Acute injury probability rises steeply with ethanol dose. A common implementation uses a log-linear relative-risk form:
+Acute risk is modeled at the **day level** using ethanol dose in grams (`g_today = drinks_today * grams_per_drink`) and steeply increasing relative-risk curves. A practical form used in the model is log-linear in dose:
 
 $RR(g) = RR_{10}^{g/10}$
 
-Daily event probability (rare-event approximation with a conservative bound):
+with daily event probability bounded as:
 
 $p(d) = 1 - (1-p_0)^{RR(g(d))}$
 
-Acute endpoints include:
+This structure is aligned to ED-based dose-response evidence for alcohol and injury risk from case-crossover analyses.[56]
 
-* traffic injury (and associated externalities)
-* non-traffic injury
-* violence-related injury (victimization severe enough to require ED care)
-* acute ethanol poisoning (modeled as concentrated in high-intensity days)
+To calibrate **absolute** daily probabilities, the model anchors baseline rates to administrative ED incidence and then scales by dose-response: injury ED visits from NHAMCS, assault-injury ED visits from NCHS NHAMCS briefs, and ethanol-poisoning ED visits (ICD-10 T51.0x) from national HCUP/NEDS analyses.[54][55][57]
 
-**Externalities:** traffic harm includes harm to non-drinkers (other road users/passengers), represented via an externality multiplier and/or victim-share parameters.
+A key empirical detail is that these endpoints are **not mutually exclusive** in raw data (e.g., assault and ethanol-poisoning visits can be subsets of injury visits), so the simulation either treats them as overlapping burdens with careful accounting or derives approximately non-overlapping categories where needed.[54][55][57]
 
-### 4.2 Next-day impairment (hangover)
+### 4.2 Next-day impairment (hangover) as direct wellbeing loss
 
-Hangover is treated as a **direct life satisfaction loss** applied on the following day with probability tied to binge/high-intensity days:
+Hangover is modeled as a direct LS decrement on subsequent day(s), triggered primarily by binge/high-intensity drinking days. This is intentionally separated from labor-income channels so productivity impacts are not counted twice. Empirical motivation comes from evidence that hangovers are associated with measurable absenteeism/presenteeism and functioning decrements, but the model translates these into direct LS losses in this channel.[44]
 
-* `P(hangover | binge)` sampled from a menu
-* `LS loss per hangover day` sampled from a menu
-* duration commonly 1–2 days
+Core sampled inputs are: `P(hangover|binge)`, LS loss per hangover day, and duration (typically 1–2 days), with higher trigger probability under high-intensity episodes.[58][63][64]
 
-This channel is intentionally kept distinct from long-run earnings effects to avoid counting “productivity loss” twice.
+### 4.3 Chronic health burden from lagged exposure
 
-### 4.3 Chronic health proxies (lagged exposure)
+Chronic harm depends on cumulative/lagged intake rather than only same-day dose. The module uses smoothed exposure (EMA with half-life menu) and applies excess-risk mappings for major chronic outcomes (e.g., cancer, cirrhosis, AF/BP-mediated cardiovascular burden), then converts health burden into utilons using a QALY-to-WELLBY factor.[33][34][35][36]
 
-Chronic risks depend on longer-run exposure. A smoothed exposure measure can be used with half-life (H) years:
+$EMA_y = EMA_{y-1}e^{-\ln(2)/H} + \bar{g}_y\left(1-e^{-\ln(2)/H}\right)$
 
-$EMA_y = EMA_{y-1},e^{-\ln(2)/H} + \bar{g}_y,(1-e^{-\ln(2)/H})$
+$U_{\text{health}} = \text{DALYs/QALYs lost} \times k_{\text{QALY}\rightarrow\text{WELLBY}}$
 
-Chronic burden is then modeled as a baseline DALY/QALY-rate multiplied by excess risk, then mapped into utilons using a QALY→WELLBY factor (sampled):
+The base conversion menu includes `k in {5,6,7,8}`, centered on 7, consistent with Green Book supplementary wellbeing guidance for bridging health utility and LS-point-years.[1]
 
-$U_{\text{health}} = \text{DALYs lost} \times k_{\text{QALY}\rightarrow\text{WELLBY}}$
+### 4.4 AUD as a stateful Markov burden with heavy-tail contribution
 
-### 4.4 AUD Markov process (stateful harm)
+AUD is modeled as a Markov process (`NoAUD -> AUD -> Remission`, with relapse). Transition intensities are linked to risk-drinking frequency (5+/4+ day frequency), following prospective NESARC evidence showing sharply increasing dependence incidence with more frequent risk drinking, and substantial recurrence risk among remitters who resume risk drinking.[39][40]
 
-AUD is modeled as an annual Markov process with states:
+AUD harm is represented through disability weights / LS decrements while in-state, with uncertainty over severity calibrated to GBD-style disability-weight evidence and newer severity-state syntheses.[41][42]
 
-* NoAUD
-* AUD
-* Remission
-
-Transitions depend on risk-drinking frequency derived from the daily exposure stream (risk-day counts), with remission/relapse dynamics and disability weights sampled in Monte Carlo. This channel drives a heavy right tail in negative outcomes in some scenarios.
+In distributional terms, this channel contributes modestly at median outcomes but materially to upper-tail negative realizations, because sustained AUD episodes compound over time and interact with other harm channels.[39][41]
 
 ---
 
