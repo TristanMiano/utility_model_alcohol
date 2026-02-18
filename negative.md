@@ -539,3 +539,63 @@ Use:
 - `relationship_ls_loss_per_year_choices`, `relationship_harm_duration_years_choices`
 - `problem_drinking_unemployment_rr_choices`, `unemployment_ls_loss_per_year_choices`
 
+
+# Bibliography (sources used in the negative utilon alcohol report)
+
+## Wellbeing units (WELLBY) and discounting / appraisal
+- UK HM Treasury (Supplementary Green Book guidance). *Wellbeing guidance for appraisal: supplementary Green Book guidance* (PDF). https://assets.publishing.service.gov.uk/media/60fa9169d3bf7f0448719daf/Wellbeing_guidance_for_appraisal_-_supplementary_Green_Book_guidance.pdf
+- Frijters, P. et al. *WELLBYs, cost-benefit analyses and the Easterlin Discount* (LSE eprints PDF). https://eprints.lse.ac.uk/114605/1/Frijters_PR3.pdf
+
+## Alcohol definitions, binge/high-intensity drinking, and broad burden
+- NIAAA. *Understanding the Dangers of Alcohol Overdose* (standard drink, binge & high-intensity definitions). https://www.niaaa.nih.gov/publications/brochures-and-fact-sheets/understanding-dangers-of-alcohol-overdose
+- WHO. *Alcohol — Fact sheet*. https://www.who.int/news-room/fact-sheets/detail/alcohol
+- CDC. *Alcohol and Public Health: Alcohol-Related Disease Impact (ARDI) / facts & stats*. https://www.cdc.gov/alcohol/facts-stats/index.html
+- CDC (MMWR). *Deaths from Excessive Alcohol Use — United States* (MMWR report). https://www.cdc.gov/mmwr/volumes/73/wr/mm7308a1.htm
+- NIAAA. *Alcohol Use Disorder (AUD) in the United States: age groups and demographic characteristics*. https://www.niaaa.nih.gov/alcohols-effects-health/alcohol-topics/alcohol-facts-and-statistics/alcohol-use-disorder-aud-united-states-age-groups-and-demographic-characteristics
+
+## Acute injury / accidents and impaired driving externalities
+- Taylor, B. et al. (2010). *A systematic review and meta-analysis of how acute alcohol consumption and injury risk relate to alcohol dose and drinking pattern.* **Drug and Alcohol Dependence** (ScienceDirect abstract page). https://www.sciencedirect.com/science/article/abs/pii/S0376871610000712
+- CDC. *Impaired Driving: Facts* (shares of deaths among drivers vs others, etc.). https://www.cdc.gov/impaired-driving/facts/index.html
+
+## Cancer
+- (HHS) Office of the Assistant Secretary for Health. *Alcohol and Cancer Risk* (PDF). https://www.hhs.gov/sites/default/files/oash-alcohol-cancer-risk.pdf
+- The Lancet (2018). *Alcohol use and burden / no-safe-level style synthesis* (full text). https://www.thelancet.com/article/S0140-6736%2818%2931310-2/fulltext
+- The Lancet Oncology. *Global alcohol-attributable cancer burden* (full text). https://www.thelancet.com/journals/lanonc/article/PIIS1470-2045%2821%2900279-5/fulltext
+- Systematic review/meta-analysis (2023). *Alcohol intake and breast cancer risk (prospective cohorts)* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC11629438/
+
+## Liver disease / cirrhosis dose-response
+- Dose-response meta-analysis (2023). *Alcohol consumption and liver cirrhosis morbidity/mortality* (PubMed record). https://pubmed.ncbi.nlm.nih.gov/37684424/
+
+## Cardiovascular outcomes (harms + contested protection)
+- Meta-analysis (AF). *Alcohol consumption and atrial fibrillation risk* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC9561500/
+- Dose-response meta-analysis (BP). *Alcohol intake and blood pressure* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC10510850/
+- Systematic review/meta-analysis (2014). *Alcohol and ischemic heart disease; patterning / reference group issues* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC4203905/
+- “Burden of proof” style synthesis (2024). *Alcohol and ischemic heart disease protective-claim uncertainty* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC11094064/
+
+## Alcohol use disorder (AUD): incidence/relapse + disability weights
+- NESARC prospective analysis (risk drinking frequency → dependence incidence) (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC2366117/
+- Remission/recurrence follow-up (NESARC-related) (PubMed record). https://pubmed.ncbi.nlm.nih.gov/18034696/
+- GBD disability weights paper (GBD 2013 DWs; includes AUD DWs) (The Lancet Global Health full text). https://www.thelancet.com/journals/langlo/article/PIIS2214-109X%2815%2900069-8/fulltext
+- Meta-analysis (2025). *Disability weights for alcohol use disorder severity states* (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC12595804/
+
+## Mental health comorbidity (MR evidence)
+- Mendelian randomization study on depression ↔ alcohol problems (PubMed record). https://pubmed.ncbi.nlm.nih.gov/41587741/
+
+## Hangover / productivity loss
+- Study on hangover-related absenteeism/presenteeism and productivity loss (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC10855845/
+
+## Relationship harms (divorce / adaptation)
+- Cohort study on spousal drinking concordance/discordance and divorce (Ovid PDF). https://www.ovid.com/journals/alcer/pdf/10.1111/acer.12029~discordant-and-concordant-alcohol-use-in-spouses-as
+- Review on life events and wellbeing adaptation (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC3289759/
+- Classic adaptation / wellbeing dynamics paper (PubMed record). https://pubmed.ncbi.nlm.nih.gov/16313658/
+
+## Labor-market / employment and wellbeing conversion anchor
+- BMJ Open. *Alcohol use/problems and employment outcomes* (article page). https://bmjopen.bmj.com/content/9/7/e029184
+- Related employment/labor-market paper (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC6451700/
+- Unemployment → life satisfaction effect size (Springer link). https://link.springer.com/article/10.1007/s10902-025-00941-0
+
+## Risky sexual behavior (optional channel)
+- Meta-analysis / review on alcohol and sexual risk behaviors (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC10270666/
+- Related systematic review (PMC full text). https://pmc.ncbi.nlm.nih.gov/articles/PMC4553138/
+- International Journal of Public Health article (Frontiers / SSPH journal site). https://www.ssph-journal.org/journals/international-journal-of-public-health/articles/10.3389/ijph.2023.1605669/full
+
