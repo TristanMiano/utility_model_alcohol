@@ -256,3 +256,39 @@ p_poisoning_curve_choices_14g = [
     [0, 0, 0, 0, 4.12445653891e-06, 8.07754779106e-06, 1.58133712188e-05, 3.09569723683e-05, 6.06029044259e-05, 0.00011856857104, 0.000231930908776, 0.000453783060487, 0.000887965893526, 0.00173713247564, 0.00339842996608, 0.003],
 ]
 ```
+
+## Bibliography (sources cited in the report)
+
+* Cairns, C., & Kang, K. (2022). *National Hospital Ambulatory Medical Care Survey: 2019 Emergency Department Summary Tables* (NHAMCS). National Center for Health Statistics (CDC). ([CDC Stacks][1])
+
+* Davis, D., & Santo, L. (2023). *Emergency department visit rates for assault: United States, 2019–2021* (NCHS Data Brief No. 481). National Center for Health Statistics (CDC). ([CDC][2])
+
+* Cherpitel, C. J., Ye, Y., Bond, J., Borges, G., & Monteiro, M. (2015). Relative risk of injury from acute alcohol consumption: Modeling the dose-response relationship in emergency department data from 18 countries. *Addiction, 110*(2), 279–288. ([PubMed][3])
+
+* Conrad, S. W., Greene, C. R., Dal Pan, G., Callahan, C. L., Meyer, T. E., & Radin, R. G. (2026). United States healthcare encounters for poisoning involving cannabis relative to other substances. *The American Journal of Drug and Alcohol Abuse.* (Author manuscript in PMC). ([PMC][4])
+
+* National Institute on Alcohol Abuse and Alcoholism (NIAAA). (n.d.). *What is a standard drink?* ([NIAAA][5])
+
+* Centers for Disease Control and Prevention (CDC). (2024). *About standard drink sizes.* ([CDC][6])
+
+* Australian Government Department of Health, Disability and Ageing. (2024). *Standard drinks guide* (10g definition). ([Department of Health and Ageing][7])
+
+* National Health and Medical Research Council (NHMRC, Australia). (n.d.). *Alcohol — What is a standard drink?* (10g definition). ([NHMRC][8])
+
+* Cleveland Clinic. (2022). *Blood alcohol content (BAC): What it is & levels.* ([Cleveland Clinic][9])
+
+* Kanny, D., Naimi, T. S., Liu, Y., & Brewer, R. D. (2020). Trends in total binge drinks per adult who reported binge drinking — United States, 2011–2017. *MMWR*, 69(2), 30–34. ([CDC][10])
+
+* Bohm, M. K., Liu, Y., Esser, M. B., Mesnick, J. B., Lu, H., Pan, Y., & Greenlund, K. J. (2021). Binge drinking among adults, by select characteristics and state — United States, 2018. *MMWR*, 70(41), 1441–1446. ([CDC][11])
+
+[1]: https://stacks.cdc.gov/view/cdc/115748?utm_source=chatgpt.com "National Hospital Ambulatory Medical Care Survey: 2019 Emergency Department Summary Tables"
+[2]: https://www.cdc.gov/nchs/products/databriefs/db481.htm?utm_source=chatgpt.com "Products - Data Briefs - Number 481 - October 2023"
+[3]: https://pubmed.ncbi.nlm.nih.gov/25355374/?utm_source=chatgpt.com "Relative risk of injury from acute alcohol consumption: modeling the dose-response relationship in emergency department data from 18 countries - PubMed"
+[4]: https://pmc.ncbi.nlm.nih.gov/articles/PMC12889077/?utm_source=chatgpt.com "United States Healthcare Encounters for Poisoning Involving Cannabis Relative to Other Substances - PMC"
+[5]: https://www.niaaa.nih.gov/alcohols-effects-health/what-standard-drink?utm_source=chatgpt.com "What Is A Standard Drink? | National Institute on Alcohol Abuse and Alcoholism (NIAAA)"
+[6]: https://www.cdc.gov/alcohol/standard-drink-sizes/index.html?utm_source=chatgpt.com "About Standard Drink Sizes | Alcohol Use | CDC"
+[7]: https://www.health.gov.au/topics/alcohol/about-alcohol/standard-drinks-guide?utm_source=chatgpt.com "Standard drinks guide | Australian Government Department of Health, Disability and Ageing"
+[8]: https://www.nhmrc.gov.au/health-advice/alcohol?utm_source=chatgpt.com "Alcohol | NHMRC"
+[9]: https://my.clevelandclinic.org/health/diagnostics/22689-blood-alcohol-content-bac?utm_source=chatgpt.com "Blood Alcohol Content (BAC): What It Is & Levels"
+[10]: https://www.cdc.gov/mmwr/volumes/69/wr/mm6902a2.htm?utm_source=chatgpt.com "Trends in Total Binge Drinks per Adult Who Reported Binge Drinking — United States, 2011–2017 | MMWR"
+[11]: https://www.cdc.gov/mmwr/volumes/70/wr/mm7041a2.htm?utm_source=chatgpt.com "Binge Drinking Among Adults, by Select Characteristics and State — United States, 2018 | MMWR"
