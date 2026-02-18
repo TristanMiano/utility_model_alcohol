@@ -368,73 +368,73 @@ The table below inventories the configurable parameters used by `sim.cpp`, with 
 
 | Parameter (sim.cpp name / CLI override) | Value or range in current model | What it means | Citation |
 | --- | --- | --- | --- |
-| `SCRIPT.num_runs` / `--runs` | Default: `100` | Number of Monte Carlo person-runs per scenario call. | TBD |
-| `SCRIPT.seed` / `--seed` | Default: `12345` | RNG seed for reproducibility. | TBD |
-| `SCRIPT.years` | `60` | Simulation horizon in years. | TBD |
-| `SCRIPT.days_per_year` | `365` | Time discretization used for daily accounting and LS-year conversion. | TBD |
-| `SCRIPT.drinks_per_day` / `--drinks-per-day` | Default: `1.5` (sweepable via `--sweep-min/max/step`) | Baseline mean daily exposure before AUD multipliers in daily mode. | TBD |
-| `SCRIPT.day_count_model` | Default: `poisson` (supported: `constant`, `poisson`, `two_point`) | Rule used to convert mean drinks/day into daily drink counts. | TBD |
-| `SCRIPT.mode` / `--mode` | Default: `expected` (allowed: `expected`, `daily`) | Chooses annualized-expected vs pathwise daily simulation engine. | TBD |
-| `SCRIPT.two_point_p_zero` | `0.5` (currently not used directly; probability is adjusted from mean and high point) | Placeholder two-point mixture control in script config. | TBD |
-| `SCRIPT.two_point_high_drinks` | Default: `6` | High-drink mass point used in two-point day-count model. | TBD |
-| `SCRIPT.max_drinks_cap` | `12` | Hard cap on drinks/day in PMF and daily sampling. | TBD |
-| `SCRIPT.discount_rate_annual` | `0.03` | Time discount rate for utility flow (`exp(-r t)`). | TBD |
-| `SCRIPT.hist_bins` / `--print-hist-data`, `--hist-data-out` context | `70` | Number of bins when exporting/printing histogram summaries. | TBD |
-| `SCRIPT.quantiles` | `{1,5,10,25,50,75,90,95,99}` | Percentiles reported in summary output. | TBD |
-| `POS_MODEL.p_social_day` / `--p-social-day` | `{0.1, 0.2, 0.35, 0.5}` | Probability a drinking day is social; affects social benefit term. | TBD |
-| `POS_MODEL.baseline_stress` / `--baseline-stress` | `{0.2, 0.4, 0.6, 0.8}` | Baseline stress index; scales relaxation benefit component. | TBD |
-| `POS_MODEL.baseline_sociability` / `--baseline-sociability` | `{0.2, 0.4, 0.6, 0.8}` | Baseline sociability index; moderates marginal social gain. | TBD |
-| `POS_MODEL.social_setting_quality` / `--social-setting-quality` | `{0.3, 0.5, 0.7, 0.9}` | Quality multiplier for social context contribution. | TBD |
-| `POS_MODEL.responsiveness` / `--responsiveness` | `{0.6, 0.8, 1.0, 1.2, 1.4}` | Person-specific responsiveness to positive drinking effects. | TBD |
-| `POS_MODEL.saturation_rate` / `--saturation-rate` | `{0.4, 0.7, 1.0, 1.3}` | Controls diminishing returns in positive gain vs drink count. | TBD |
-| `POS_MODEL.ls_per_session_score` / `--ls-per-session-score` | `{0.15, 0.25, 0.35, 0.50}` | Base LS scaling for one drinking session’s positive effect. | TBD |
-| `POS_MODEL.w_enjoyment` / `--w-enjoyment` | `{0.8, 1.0, 1.2, 1.4}` | Weight on hedonic enjoyment in positive utility. | TBD |
-| `POS_MODEL.w_relaxation` / `--w-relaxation` | `{0.6, 0.8, 1.0, 1.2}` | Weight on relaxation channel in positive utility. | TBD |
-| `POS_MODEL.w_social` / `--w-social` | `{0.5, 0.8, 1.1, 1.4}` | Weight on social channel in positive utility. | TBD |
-| `POS_MODEL.w_mood` / `--w-mood` | `{0.3, 0.5, 0.7, 0.9}` | Weight on mood channel in positive utility. | TBD |
-| `POS_MODEL.max_daily_ls_uplift` / `--max-daily-ls-uplift` | `{1.0, 1.5, 2.0}` | Ceiling on day-level LS benefit from drinking. | TBD |
-| `NEG_MODEL.discount_rate_choices` / `--discount-rate-choices` | `{0.0, 0.015, 0.03, 0.05}` | Drawn discount-rate menu for negative-side parameterization. | TBD |
-| `NEG_MODEL.grams_ethanol_per_standard_drink_choices` / `--grams-ethanol-per-standard-drink-choices` | `{10, 14}` | Ethanol grams per standard drink conversion. | TBD |
-| `NEG_MODEL.qaly_to_wellby_factor_choices` / `--qaly-to-wellby-factor-choices` | `{5, 6, 7, 8}` | QALY/DALY to WELLBY(utilon) conversion multiplier. | TBD |
-| `NEG_MODEL.causal_weight_choices` / `--causal-weight-choices` | `{0.25, 0.5, 0.75, 1.0}` | Global causal-attribution weight for harm channels. | TBD |
-| `NEG_MODEL.binge_threshold_drinks_choices` / `--binge-threshold-drinks-choices` | `{4, 5}` | Drinks threshold defining binge day. | TBD |
-| `NEG_MODEL.high_intensity_multiplier_choices` / `--high-intensity-multiplier-choices` | `{2, 3}` | Multiplier on binge threshold for high-intensity day definition. | TBD |
-| `NEG_MODEL.latency_half_life_years_choices` / `--latency-half-life-years-choices` | `{2, 5, 10}` | Half-life for chronic exposure EMA memory (general). | TBD |
-| `NEG_MODEL.cancer_latency_half_life_years_choices` / `--cancer-latency-half-life-years-choices` | `{5, 10, 15}` | Half-life for cancer EMA memory. | TBD |
-| `NEG_MODEL.cirrhosis_latency_half_life_years_choices` / `--cirrhosis-latency-half-life-years-choices` | `{3, 5, 10}` | Half-life for cirrhosis EMA memory. | TBD |
-| `NEG_MODEL.traffic_injury_rr_per_10g_choices` / `--traffic-injury-rr-per-10g-choices` | `{1.18, 1.24, 1.30}` | Relative-risk multiplier per 10g ethanol for traffic injury. | TBD |
-| `NEG_MODEL.nontraffic_injury_rr_per_10g_choices` / `--nontraffic-injury-rr-per-10g-choices` | `{1.26, 1.30, 1.34}` | Relative-risk multiplier per 10g ethanol for non-traffic injury. | TBD |
-| `NEG_MODEL.intentional_injury_rr_per_drink_choices` / `--intentional-injury-rr-per-drink-choices` | `{1.25, 1.38, 1.50}` | Per-drink RR slope for violence/intentional injury channel. | TBD |
-| `NEG_MODEL.injury_baseline_prob_per_drinking_day_choices` / `--injury-baseline-prob-per-drinking-day-choices` | `{1e-4, 2.5e-4, 5e-4, 1e-3}` | Baseline daily acute injury probability on drinking days. | TBD |
-| `NEG_MODEL.violence_baseline_prob_per_binge_day_choices` / `--violence-baseline-prob-per-binge-day-choices` | `{5e-6, 1e-5, 2e-5, 5e-5}` | Baseline violence-event probability conditional on binge day. | TBD |
-| `NEG_MODEL.injury_daly_per_nonfatal_event_choices` / `--injury-daly-per-nonfatal-event-choices` | `{0.005, 0.02, 0.05}` | DALY burden of a nonfatal acute injury event. | TBD |
-| `NEG_MODEL.injury_case_fatality_choices` / `--injury-case-fatality-choices` | `{0.002, 0.005, 0.01}` | Fatality probability for acute injury events. | TBD |
-| `NEG_MODEL.injury_daly_per_fatal_event_choices` / `--injury-daly-per-fatal-event-choices` | `{20, 30, 40}` | DALY burden assigned to fatal acute event. | TBD |
-| `NEG_MODEL.traffic_injury_externality_multiplier_choices` / `--traffic-injury-externality-multiplier-choices` | `{0.5, 1.0, 1.5}` | Extra harm factor for non-drinker externality in traffic injuries. | TBD |
-| `NEG_MODEL.poisoning_prob_per_high_intensity_day_choices` / `--poisoning-prob-per-high-intensity-day-choices` | `{1e-6, 3e-6, 1e-5, 3e-5}` | Acute poisoning probability on high-intensity days. | TBD |
-| `NEG_MODEL.poisoning_case_fatality_choices` / `--poisoning-case-fatality-choices` | `{0.005, 0.01, 0.02}` | Fatality probability for poisoning events. | TBD |
-| `NEG_MODEL.poisoning_daly_nonfatal_choices` / `--poisoning-daly-nonfatal-choices` | `{0.01, 0.05, 0.2}` | DALY burden for nonfatal poisoning event. | TBD |
-| `NEG_MODEL.hangover_prob_given_binge_choices` / `--hangover-prob-given-binge-choices` | `{0.3, 0.5, 0.7, 0.9}` | Probability of hangover after binge day. | TBD |
-| `NEG_MODEL.hangover_ls_loss_per_day_choices` / `--hangover-ls-loss-per-day-choices` | `{0.05, 0.1, 0.2, 0.4}` | Life-satisfaction loss applied per hangover day. | TBD |
-| `NEG_MODEL.hangover_duration_days_choices` / `--hangover-duration-days-choices` | `{1, 2}` | Hangover spell length in days. | TBD |
-| `NEG_MODEL.breast_cancer_rr_per_10g_day_choices` / `--breast-cancer-rr-per-10g-day-choices` | `{1.05, 1.07, 1.10}` | Breast-cancer RR menu (currently present in config menu; not directly consumed in current equations). | TBD |
-| `NEG_MODEL.all_cancer_rr_per_10g_day_choices` / `--all-cancer-rr-per-10g-day-choices` | `{1.02, 1.04, 1.06}` | RR per 10g/day for all-cancer chronic burden. | TBD |
-| `NEG_MODEL.cancer_causal_weight_choices` / `--cancer-causal-weight-choices` | `{0.75, 1.0}` | Cancer-specific causal attribution weight. | TBD |
-| `NEG_MODEL.cirrhosis_rr_mortality_at_25g_choices` / `--cirrhosis-rr-mortality-at-25g-choices` | `{2.0, 2.65, 3.2}` | RR anchor for cirrhosis mortality at 25g/day. | TBD |
-| `NEG_MODEL.cirrhosis_rr_mortality_at_50g_choices` / `--cirrhosis-rr-mortality-at-50g-choices` | `{5.5, 6.83, 8.0}` | RR anchor for cirrhosis mortality at 50g/day. | TBD |
-| `NEG_MODEL.cirrhosis_rr_mortality_at_100g_choices` / `--cirrhosis-rr-mortality-at-100g-choices` | `{12.0, 16.38, 20.0}` | RR anchor for cirrhosis mortality at 100g/day. | TBD |
-| `NEG_MODEL.af_rr_per_drink_day_choices` / `--af-rr-per-drink-day-choices` | `{1.03, 1.06, 1.08}` | Atrial-fibrillation RR slope per drink/day equivalent. | TBD |
-| `NEG_MODEL.include_ihd_protection_choices` / `--include-ihd-protection-choices` | `{false, true}` | Toggle for including modeled IHD protective term. | TBD |
-| `NEG_MODEL.ihd_protective_rr_nadir_choices` / `--ihd-protective-rr-nadir-choices` | `{0.85, 0.95, 1.0}` | IHD RR nadir when protection is included. | TBD |
-| `NEG_MODEL.binge_negates_ihd_protection_choices` / `--binge-negates-ihd-protection-choices` | `{true, false}` | Whether binge days cancel IHD protection effect. | TBD |
-| `NEG_MODEL.aud_onset_base_prob_per_year_choices` / `--aud-onset-base-prob-per-year-choices` | `{0.002, 0.005, 0.01}` | Baseline annual onset probability for AUD state model. | TBD |
-| `NEG_MODEL.aud_remission_prob_per_year_choices` / `--aud-remission-prob-per-year-choices` | `{0.08, 0.15, 0.25}` | Annual probability of AUD remission. | TBD |
-| `NEG_MODEL.aud_relapse_prob_per_year_if_abstinent_choices` / `--aud-relapse-prob-per-year-if-abstinent-choices` | `{0.02, 0.05, 0.10}` | Annual relapse probability when abstinent/remitted. | TBD |
-| `NEG_MODEL.aud_relapse_multiplier_if_risk_drinking_choices` / `--aud-relapse-multiplier-if-risk-drinking-choices` | `{3, 6, 10}` | Relapse-risk multiplier when risk drinking is present. | TBD |
-| `NEG_MODEL.aud_disability_weight_choices` / `--aud-disability-weight-choices` | `{0.123, 0.235, 0.366}` | Disability weight applied to active AUD state. | TBD |
-| `NEG_MODEL.aud_depression_ls_addon_choices` / `--aud-depression-ls-addon-choices` | `{0.0, 0.2, 0.5, 1.0}` | Additional LS decrement proxy linked to AUD/depressive burden. | TBD |
-| `NEG_MODEL.mental_health_causal_weight_choices` / `--mental-health-causal-weight-choices` | `{0.25, 0.5, 0.75}` | Causal weight for mental-health-related AUD addon term. | TBD |
-| `NEG_MODEL.baseline_daly_rate_all_cancer_choices` / `--baseline-daly-rate-all-cancer-choices` | `{0.001, 0.003, 0.006}` | Baseline all-cancer DALY rate before alcohol-attributable excess risk. | TBD |
-| `NEG_MODEL.baseline_daly_rate_cirrhosis_choices` / `--baseline-daly-rate-cirrhosis-choices` | `{0.0003, 0.001, 0.0025}` | Baseline cirrhosis DALY rate before alcohol-attributable excess risk. | TBD |
-| `NEG_MODEL.baseline_daly_rate_af_choices` / `--baseline-daly-rate-af-choices` | `{0.0005, 0.0015, 0.003}` | Baseline AF DALY rate before alcohol-attributable excess risk. | TBD |
-| `NEG_MODEL.baseline_daly_rate_ihd_choices` / `--baseline-daly-rate-ihd-choices` | `{0.001, 0.003, 0.006}` | Baseline IHD DALY rate used for protective/harm adjustment term. | TBD |
+| `SCRIPT.num_runs` / `--runs` | Default: `100` | Number of Monte Carlo person-runs per scenario call. | N/A |
+| `SCRIPT.seed` / `--seed` | Default: `12345` | RNG seed for reproducibility. | N/A |
+| `SCRIPT.years` | `60` | Simulation horizon in years. | N/A |
+| `SCRIPT.days_per_year` | `365` | Time discretization used for daily accounting and LS-year conversion. | N/A |
+| `SCRIPT.drinks_per_day` / `--drinks-per-day` | Default: `1.5` (sweepable via `--sweep-min/max/step`) | Baseline mean daily exposure before AUD multipliers in daily mode. | N/A |
+| `SCRIPT.day_count_model` | Default: `poisson` (supported: `constant`, `poisson`, `two_point`) | Rule used to convert mean drinks/day into daily drink counts. | N/A |
+| `SCRIPT.mode` / `--mode` | Default: `expected` (allowed: `expected`, `daily`) | Chooses annualized-expected vs pathwise daily simulation engine. | N/A |
+| `SCRIPT.two_point_p_zero` | `0.5` (currently not used directly; probability is adjusted from mean and high point) | Placeholder two-point mixture control in script config. | N/A |
+| `SCRIPT.two_point_high_drinks` | Default: `6` | High-drink mass point used in two-point day-count model. | N/A |
+| `SCRIPT.max_drinks_cap` | `12` | Hard cap on drinks/day in PMF and daily sampling. | N/A |
+| `SCRIPT.discount_rate_annual` | `0.03` | Time discount rate for utility flow (`exp(-r t)`). | N/A |
+| `SCRIPT.hist_bins` / `--print-hist-data`, `--hist-data-out` context | `70` | Number of bins when exporting/printing histogram summaries. | N/A |
+| `SCRIPT.quantiles` | `{1,5,10,25,50,75,90,95,99}` | Percentiles reported in summary output. | N/A |
+| `POS_MODEL.p_social_day` / `--p-social-day` | `{0.1, 0.2, 0.35, 0.5}` | Probability a drinking day is social; affects social benefit term. | needs source |
+| `POS_MODEL.baseline_stress` / `--baseline-stress` | `{0.2, 0.4, 0.6, 0.8}` | Baseline stress index; scales relaxation benefit component. | needs source |
+| `POS_MODEL.baseline_sociability` / `--baseline-sociability` | `{0.2, 0.4, 0.6, 0.8}` | Baseline sociability index; moderates marginal social gain. | needs source |
+| `POS_MODEL.social_setting_quality` / `--social-setting-quality` | `{0.3, 0.5, 0.7, 0.9}` | Quality multiplier for social context contribution. | needs source |
+| `POS_MODEL.responsiveness` / `--responsiveness` | `{0.6, 0.8, 1.0, 1.2, 1.4}` | Person-specific responsiveness to positive drinking effects. | needs source |
+| `POS_MODEL.saturation_rate` / `--saturation-rate` | `{0.4, 0.7, 1.0, 1.3}` | Controls diminishing returns in positive gain vs drink count. | needs source |
+| `POS_MODEL.ls_per_session_score` / `--ls-per-session-score` | `{0.15, 0.25, 0.35, 0.50}` | Base LS scaling for one drinking session’s positive effect. | needs source |
+| `POS_MODEL.w_enjoyment` / `--w-enjoyment` | `{0.8, 1.0, 1.2, 1.4}` | Weight on hedonic enjoyment in positive utility. | needs source |
+| `POS_MODEL.w_relaxation` / `--w-relaxation` | `{0.6, 0.8, 1.0, 1.2}` | Weight on relaxation channel in positive utility. | needs source |
+| `POS_MODEL.w_social` / `--w-social` | `{0.5, 0.8, 1.1, 1.4}` | Weight on social channel in positive utility. | needs source |
+| `POS_MODEL.w_mood` / `--w-mood` | `{0.3, 0.5, 0.7, 0.9}` | Weight on mood channel in positive utility. | needs source |
+| `POS_MODEL.max_daily_ls_uplift` / `--max-daily-ls-uplift` | `{1.0, 1.5, 2.0}` | Ceiling on day-level LS benefit from drinking. | needs source |
+| `NEG_MODEL.discount_rate_choices` / `--discount-rate-choices` | `{0.0, 0.015, 0.03, 0.05}` | Drawn discount-rate menu for negative-side parameterization. | needs source |
+| `NEG_MODEL.grams_ethanol_per_standard_drink_choices` / `--grams-ethanol-per-standard-drink-choices` | `{10, 14}` | Ethanol grams per standard drink conversion. | NIAAA (14 g standard drink); Australian standard drink definition (10 g ethanol) |
+| `NEG_MODEL.qaly_to_wellby_factor_choices` / `--qaly-to-wellby-factor-choices` | `{5, 6, 7, 8}` | QALY/DALY to WELLBY(utilon) conversion multiplier. | needs source |
+| `NEG_MODEL.causal_weight_choices` / `--causal-weight-choices` | `{0.25, 0.5, 0.75, 1.0}` | Global causal-attribution weight for harm channels. | needs source |
+| `NEG_MODEL.binge_threshold_drinks_choices` / `--binge-threshold-drinks-choices` | `{4, 5}` | Drinks threshold defining binge day. | NIAAA binge-drinking threshold definitions (4/5+ drinks) |
+| `NEG_MODEL.high_intensity_multiplier_choices` / `--high-intensity-multiplier-choices` | `{2, 3}` | Multiplier on binge threshold for high-intensity day definition. | NIAAA high-intensity drinking framing (2x/3x binge threshold) |
+| `NEG_MODEL.latency_half_life_years_choices` / `--latency-half-life-years-choices` | `{2, 5, 10}` | Half-life for chronic exposure EMA memory (general). | needs source |
+| `NEG_MODEL.cancer_latency_half_life_years_choices` / `--cancer-latency-half-life-years-choices` | `{5, 10, 15}` | Half-life for cancer EMA memory. | needs source |
+| `NEG_MODEL.cirrhosis_latency_half_life_years_choices` / `--cirrhosis-latency-half-life-years-choices` | `{3, 5, 10}` | Half-life for cirrhosis EMA memory. | needs source |
+| `NEG_MODEL.traffic_injury_rr_per_10g_choices` / `--traffic-injury-rr-per-10g-choices` | `{1.18, 1.24, 1.30}` | Relative-risk multiplier per 10g ethanol for traffic injury. | Cherpitel et al. multinational ED case-crossover dose-response (injury odds vs drinks in prior 6h) |
+| `NEG_MODEL.nontraffic_injury_rr_per_10g_choices` / `--nontraffic-injury-rr-per-10g-choices` | `{1.26, 1.30, 1.34}` | Relative-risk multiplier per 10g ethanol for non-traffic injury. | Cherpitel et al. multinational ED case-crossover dose-response (injury odds vs drinks in prior 6h) |
+| `NEG_MODEL.intentional_injury_rr_per_drink_choices` / `--intentional-injury-rr-per-drink-choices` | `{1.25, 1.38, 1.50}` | Per-drink RR slope for violence/intentional injury channel. | Cherpitel et al. multinational ED case-crossover dose-response (cause-specific intentional injury ORs) |
+| `NEG_MODEL.injury_baseline_prob_per_drinking_day_choices` / `--injury-baseline-prob-per-drinking-day-choices` | `{1e-4, 2.5e-4, 5e-4, 1e-3}` | Baseline daily acute injury probability on drinking days. | NHAMCS 2019 ED injury-visit rates (baseline absolute incidence) |
+| `NEG_MODEL.violence_baseline_prob_per_binge_day_choices` / `--violence-baseline-prob-per-binge-day-choices` | `{5e-6, 1e-5, 2e-5, 5e-5}` | Baseline violence-event probability conditional on binge day. | NCHS Data Brief (NHAMCS 2019-2021) assault-related ED visit rates, ICD-10-CM X92-Y09 |
+| `NEG_MODEL.injury_daly_per_nonfatal_event_choices` / `--injury-daly-per-nonfatal-event-choices` | `{0.005, 0.02, 0.05}` | DALY burden of a nonfatal acute injury event. | needs source |
+| `NEG_MODEL.injury_case_fatality_choices` / `--injury-case-fatality-choices` | `{0.002, 0.005, 0.01}` | Fatality probability for acute injury events. | needs source |
+| `NEG_MODEL.injury_daly_per_fatal_event_choices` / `--injury-daly-per-fatal-event-choices` | `{20, 30, 40}` | DALY burden assigned to fatal acute event. | needs source |
+| `NEG_MODEL.traffic_injury_externality_multiplier_choices` / `--traffic-injury-externality-multiplier-choices` | `{0.5, 1.0, 1.5}` | Extra harm factor for non-drinker externality in traffic injuries. | NHTSA alcohol-impaired crash fatality victim shares (non-driver externalities) |
+| `NEG_MODEL.poisoning_prob_per_high_intensity_day_choices` / `--poisoning-prob-per-high-intensity-day-choices` | `{1e-6, 3e-6, 1e-5, 3e-5}` | Acute poisoning probability on high-intensity days. | HCUP NEDS T51.0x ethanol-poisoning ED estimates, scaled with BRFSS binge-episode anchors |
+| `NEG_MODEL.poisoning_case_fatality_choices` / `--poisoning-case-fatality-choices` | `{0.005, 0.01, 0.02}` | Fatality probability for poisoning events. | needs source |
+| `NEG_MODEL.poisoning_daly_nonfatal_choices` / `--poisoning-daly-nonfatal-choices` | `{0.01, 0.05, 0.2}` | DALY burden for nonfatal poisoning event. | needs source |
+| `NEG_MODEL.hangover_prob_given_binge_choices` / `--hangover-prob-given-binge-choices` | `{0.3, 0.5, 0.7, 0.9}` | Probability of hangover after binge day. | needs source |
+| `NEG_MODEL.hangover_ls_loss_per_day_choices` / `--hangover-ls-loss-per-day-choices` | `{0.05, 0.1, 0.2, 0.4}` | Life-satisfaction loss applied per hangover day. | needs source |
+| `NEG_MODEL.hangover_duration_days_choices` / `--hangover-duration-days-choices` | `{1, 2}` | Hangover spell length in days. | needs source |
+| `NEG_MODEL.breast_cancer_rr_per_10g_day_choices` / `--breast-cancer-rr-per-10g-day-choices` | `{1.05, 1.07, 1.10}` | Breast-cancer RR menu (currently present in config menu; not directly consumed in current equations). | Alcohol-breast cancer dose-response meta-analysis (exact study not specified in current docs) |
+| `NEG_MODEL.all_cancer_rr_per_10g_day_choices` / `--all-cancer-rr-per-10g-day-choices` | `{1.02, 1.04, 1.06}` | RR per 10g/day for all-cancer chronic burden. | Alcohol-all-cancer dose-response meta-analysis (exact study not specified in current docs) |
+| `NEG_MODEL.cancer_causal_weight_choices` / `--cancer-causal-weight-choices` | `{0.75, 1.0}` | Cancer-specific causal attribution weight. | needs source |
+| `NEG_MODEL.cirrhosis_rr_mortality_at_25g_choices` / `--cirrhosis-rr-mortality-at-25g-choices` | `{2.0, 2.65, 3.2}` | RR anchor for cirrhosis mortality at 25g/day. | 2023 dose-response meta-analysis for alcohol and cirrhosis mortality |
+| `NEG_MODEL.cirrhosis_rr_mortality_at_50g_choices` / `--cirrhosis-rr-mortality-at-50g-choices` | `{5.5, 6.83, 8.0}` | RR anchor for cirrhosis mortality at 50g/day. | 2023 dose-response meta-analysis for alcohol and cirrhosis mortality |
+| `NEG_MODEL.cirrhosis_rr_mortality_at_100g_choices` / `--cirrhosis-rr-mortality-at-100g-choices` | `{12.0, 16.38, 20.0}` | RR anchor for cirrhosis mortality at 100g/day. | 2023 dose-response meta-analysis for alcohol and cirrhosis mortality |
+| `NEG_MODEL.af_rr_per_drink_day_choices` / `--af-rr-per-drink-day-choices` | `{1.03, 1.06, 1.08}` | Atrial-fibrillation RR slope per drink/day equivalent. | Atrial fibrillation alcohol dose-response meta-analyses (per-drink RR) |
+| `NEG_MODEL.include_ihd_protection_choices` / `--include-ihd-protection-choices` | `{false, true}` | Toggle for including modeled IHD protective term. | IHD alcohol-protection literature is mixed (observational vs MR); modeled as sensitivity toggle |
+| `NEG_MODEL.ihd_protective_rr_nadir_choices` / `--ihd-protective-rr-nadir-choices` | `{0.85, 0.95, 1.0}` | IHD RR nadir when protection is included. | IHD alcohol-protection literature is mixed (observational vs MR); modeled as sensitivity range |
+| `NEG_MODEL.binge_negates_ihd_protection_choices` / `--binge-negates-ihd-protection-choices` | `{true, false}` | Whether binge days cancel IHD protection effect. | Evidence that heavy episodic/binge drinking attenuates putative IHD protection |
+| `NEG_MODEL.aud_onset_base_prob_per_year_choices` / `--aud-onset-base-prob-per-year-choices` | `{0.002, 0.005, 0.01}` | Baseline annual onset probability for AUD state model. | needs source |
+| `NEG_MODEL.aud_remission_prob_per_year_choices` / `--aud-remission-prob-per-year-choices` | `{0.08, 0.15, 0.25}` | Annual probability of AUD remission. | needs source |
+| `NEG_MODEL.aud_relapse_prob_per_year_if_abstinent_choices` / `--aud-relapse-prob-per-year-if-abstinent-choices` | `{0.02, 0.05, 0.10}` | Annual relapse probability when abstinent/remitted. | needs source |
+| `NEG_MODEL.aud_relapse_multiplier_if_risk_drinking_choices` / `--aud-relapse-multiplier-if-risk-drinking-choices` | `{3, 6, 10}` | Relapse-risk multiplier when risk drinking is present. | NESARC-based AUD risk heterogeneity framing (exact relapse multiplier source not specified) |
+| `NEG_MODEL.aud_disability_weight_choices` / `--aud-disability-weight-choices` | `{0.123, 0.235, 0.366}` | Disability weight applied to active AUD state. | GBD alcohol-use-disorder disability weight sets (GBD 2013 + newer synthesis) |
+| `NEG_MODEL.aud_depression_ls_addon_choices` / `--aud-depression-ls-addon-choices` | `{0.0, 0.2, 0.5, 1.0}` | Additional LS decrement proxy linked to AUD/depressive burden. | needs source |
+| `NEG_MODEL.mental_health_causal_weight_choices` / `--mental-health-causal-weight-choices` | `{0.25, 0.5, 0.75}` | Causal weight for mental-health-related AUD addon term. | needs source |
+| `NEG_MODEL.baseline_daly_rate_all_cancer_choices` / `--baseline-daly-rate-all-cancer-choices` | `{0.001, 0.003, 0.006}` | Baseline all-cancer DALY rate before alcohol-attributable excess risk. | IHME Global Burden of Disease baseline DALY rates (age/sex/population calibration) |
+| `NEG_MODEL.baseline_daly_rate_cirrhosis_choices` / `--baseline-daly-rate-cirrhosis-choices` | `{0.0003, 0.001, 0.0025}` | Baseline cirrhosis DALY rate before alcohol-attributable excess risk. | IHME Global Burden of Disease baseline DALY rates (age/sex/population calibration) |
+| `NEG_MODEL.baseline_daly_rate_af_choices` / `--baseline-daly-rate-af-choices` | `{0.0005, 0.0015, 0.003}` | Baseline AF DALY rate before alcohol-attributable excess risk. | IHME Global Burden of Disease baseline DALY rates (age/sex/population calibration) |
+| `NEG_MODEL.baseline_daly_rate_ihd_choices` / `--baseline-daly-rate-ihd-choices` | `{0.001, 0.003, 0.006}` | Baseline IHD DALY rate used for protective/harm adjustment term. | IHME Global Burden of Disease baseline DALY rates (age/sex/population calibration) |
