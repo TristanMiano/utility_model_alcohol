@@ -22,24 +22,20 @@ This is a WELLBY-style unit, enabling consistent aggregation across short-lived 
 
 For any simulated life-course realization:
 
-* **Positive utilons** (U_{+}) capture enjoyment, mood lift, and social benefits (modeled as life-satisfaction gains over time).
-* **Negative utilons** (U_{-}) capture acute risks (injury/violence/poisoning), next-day impairment, chronic health burdens, and alcohol use disorder (AUD) state burdens (modeled as life-satisfaction losses over time).
+* **Positive utilons** ($U_{+}$) capture enjoyment, mood lift, and social benefits (modeled as life-satisfaction gains over time).
+* **Negative utilons** ($U_{-}$) capture acute risks (injury/violence/poisoning), next-day impairment, chronic health burdens, and alcohol use disorder (AUD) state burdens (modeled as life-satisfaction losses over time).
 
 The model reports:
 
-[
-U_{\text{net}} = U_{+} - U_{-}
-]
+$U_{\text{net}} = U_{+} - U_{-}$
 
 ### 1.3 Discounting
 
 Utilities are discounted over time using a continuous discount rate (r):
 
-[
-U = \int_0^{T} e^{-rt},\Delta LS(t),dt
-]
+$U = \int_0^{T} e^{-rt},\Delta LS(t),dt$
 
-In implementation with daily or annual time steps, this becomes a discounted sum over time slices. Core sensitivity includes (r \in {0,,0.015,,0.03,,0.05}).
+In implementation with daily or annual time steps, this becomes a discounted sum over time slices. Core sensitivity includes ($r \in {0,,0.015,,0.03,,0.05}$).
 
 ---
 
@@ -73,7 +69,7 @@ Daily drinks can be generated using one of:
 
 * **Constant**: `drinks_today = drinks_per_day`
 * **Poisson**: `drinks_today ~ Poisson(drinks_per_day)`
-* **Two-point mixture**: `drinks_today = 0` with probability (p_0), otherwise a high value chosen to preserve the mean
+* **Two-point mixture**: `drinks_today = 0` with probability ($p_0$), otherwise a high value chosen to preserve the mean
 
 This matters because many harms are highly nonlinear in dose and concentrate in **heavy episodic** days.
 
@@ -122,16 +118,14 @@ The strictest “ethanol-attributable” benefits correspond to the pharmacologi
 
 For a benefit channel (k):
 
-[
-U_{k} = N \times \Delta LS_{k} \times D_{k} \times A_{k}
-]
+$U_{k} = N \times \Delta LS_{k} \times D_{k} \times A_{k}$
 
 where:
 
-* (N): number of affected persons (often 1, but social spillovers can expand this)
-* (\Delta LS_{k}): life satisfaction increment (0–10 scale)
-* (D_{k}): duration in years (e.g., hours / 8760, days / 365)
-* (A_{k}): attribution weight in ([0,1]) capturing substitution and causal tightness
+* ($N$): number of affected persons (often 1, but social spillovers can expand this)
+* ($\Delta LS_{k}$): life satisfaction increment (0–10 scale)
+* ($D_{k}$): duration in years (e.g., hours / 8760, days / 365)
+* ($A_{k}$): attribution weight in ($[0,1]$) capturing substitution and causal tightness
 
 All positive-channel parameters are sampled in Monte Carlo rather than treated as fixed.
 
@@ -145,15 +139,11 @@ The negative module consumes the same exposure stream and produces discounted li
 
 Acute injury probability rises steeply with ethanol dose. A common implementation uses a log-linear relative-risk form:
 
-[
-RR(g) = RR_{10}^{g/10}
-]
+$RR(g) = RR_{10}^{g/10}$
 
 Daily event probability (rare-event approximation with a conservative bound):
 
-[
-p(d) = 1 - (1-p_0)^{RR(g(d))}
-]
+$p(d) = 1 - (1-p_0)^{RR(g(d))}$
 
 Acute endpoints include:
 
@@ -178,15 +168,11 @@ This channel is intentionally kept distinct from long-run earnings effects to av
 
 Chronic risks depend on longer-run exposure. A smoothed exposure measure can be used with half-life (H) years:
 
-[
-EMA_y = EMA_{y-1},e^{-\ln(2)/H} + \bar{g}_y,(1-e^{-\ln(2)/H})
-]
+$EMA_y = EMA_{y-1},e^{-\ln(2)/H} + \bar{g}_y,(1-e^{-\ln(2)/H})$
 
 Chronic burden is then modeled as a baseline DALY/QALY-rate multiplied by excess risk, then mapped into utilons using a QALY→WELLBY factor (sampled):
 
-[
-U_{\text{health}} = \text{DALYs lost} \times k_{\text{QALY}\rightarrow\text{WELLBY}}
-]
+$U_{\text{health}} = \text{DALYs lost} \times k_{\text{QALY}\rightarrow\text{WELLBY}}$
 
 ### 4.4 AUD Markov process (stateful harm)
 
@@ -230,7 +216,7 @@ Instead of single best-guess parameters, the model uses **discrete parameter men
 * causal-weight knobs for observational channels
 * AUD onset/remission/relapse and disability weights
 
-This yields distributions over (U_{+}), (U_{-}), and (U_{\text{net}}), enabling percentile reporting and sensitivity comparisons across scenario variants.
+This yields distributions over ($U_{+}$), ($U_{-}$), and ($U_{\text{net}}$), enabling percentile reporting and sensitivity comparisons across scenario variants.
 
 ### 5.2 Scenarios (interventions on the exposure–harm map)
 
@@ -252,9 +238,7 @@ For this write-up, the chosen structural model is **`--mode daily`**, because it
 
 In utility terms, `daily` mode is closest to the conceptual object
 
-[
-U_{\text{net}} = \sum_{d=1}^{D} e^{-r t_d}\left(\Delta LS_{+,d} - \Delta LS_{-,d}\right),
-]
+$U_{\text{net}} = \sum_{d=1}^{D} e^{-r t_d}\left(\Delta LS_{+,d} - \Delta LS_{-,d}\right),$
 
 with path-dependent state variables (AUD state, hangover days remaining, alive/dead status, exposure EMAs).
 
@@ -306,7 +290,7 @@ The shift is driven primarily by a large reduction in the acute harm distributio
 
 ### 7.2 Scenario summary table (distribution highlights)
 
-All values are utilons; net is (U_{+} - U_{-}). Percentiles are taken from Monte Carlo outputs.
+All values are utilons; net is ($U_{+} - U_{-}$). Percentiles are taken from Monte Carlo outputs.
 
 | Scenario              | Positive p50 | Negative p50 | **Net p50** | Net p05 | Net p95 |
 | --------------------- | -----------: | -----------: | ----------: | ------: | ------: |
