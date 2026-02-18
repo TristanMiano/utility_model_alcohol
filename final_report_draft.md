@@ -95,39 +95,58 @@ These markers route exposure into acute-risk channels and the AUD risk process.
 
 ### 3.1 What is counted
 
-The positive module expresses short-run and social effects as increments to life satisfaction over specified durations, then aggregates across episodes and time.
+The positive module summarizes alcohol-linked benefits as short-lived or social increments in life satisfaction (LS), then converts these increments into utilons (LS-point-years).
 
-Typical benefit channels include:
+Core channels included in this report are:
 
-* **Hedonic pleasure / in-the-moment mood elevation** (minutes–hours)
-* **Social bonding and affiliation** (hours–days, potentially with short spillovers)
-* **Sociability / reduced inhibition** (hours)
-* **Expectancy-driven confidence effects** (hours)
+* **Momentary hedonic uplift while drinking** (minutes to hours), informed by experience-sampling evidence that people report higher immediate happiness at drinking moments.[5]
+* **Social bonding and affiliation effects** during shared drinking episodes, including experimentally observed increases in perceived bonding in alcohol-administration group settings.[3]
+* **Sociability and reduced social anxiety in some contexts**, where effects may depend on setting and subgroup (e.g., socially anxious populations).[6][7]
+* **Expectancy-related confidence/affect effects**, where believing one consumed alcohol can itself shift reported experience even without ethanol exposure.[11]
+
+The model treats these channels as potentially real but generally **time-limited**, so most positive utilons are generated through frequent small gains rather than large persistent LS shifts.[5][9]
 
 ### 3.2 Attribution structure (context vs expectancy vs ethanol)
 
-When evidence supports it, benefits are decomposed conceptually into:
+A central finding from the positive-evidence review is that not all observed benefit in “drinking occasions” is pharmacological ethanol benefit. The model therefore separates attribution into:
 
-* **Context effect**: being in the social situation
-* **Expectancy effect**: believing alcohol was consumed
-* **Pharmacological effect**: ethanol beyond expectancy
+* **Context effect**: benefits from the social situation itself (gathering, ritual, group interaction), which may occur even with non-alcoholic substitution.[7][10]
+* **Expectancy effect**: benefits caused by believing alcohol was consumed.[11]
+* **Pharmacological ethanol effect**: incremental effect of ethanol beyond expectancy (alcohol vs placebo contrast).[3]
 
-The strictest “ethanol-attributable” benefits correspond to the pharmacological component (alcohol vs placebo). Broader “occasion-attributable” benefits include context dependence and substitution assumptions.
+For conservative moral accounting, the strictest ethanol-attributable estimate emphasizes the third component. Broader occasion-attributable estimates include context and expectancy components but apply attenuation weights for substitution risk.
 
-### 3.3 Generic conversion template
+### 3.3 Measurement-to-utilon conversion logic
 
-For a benefit channel (k):
+The conversion framework in `positive.md` uses a common accounting identity:
 
 $U_{k} = N \times \Delta LS_{k} \times D_{k} \times A_{k}$
 
 where:
 
-* ($N$): number of affected persons (often 1, but social spillovers can expand this)
-* ($\Delta LS_{k}$): life satisfaction increment (0–10 scale)
-* ($D_{k}$): duration in years (e.g., hours / 8760, days / 365)
-* ($A_{k}$): attribution weight in ($[0,1]$) capturing substitution and causal tightness
+* ($N$): number of affected persons,
+* ($\Delta LS_{k}$): LS increment on the 0–10 scale,
+* ($D_{k}$): duration in years,
+* ($A_{k}$): attribution weight in ($[0,1]$).
 
-All positive-channel parameters are sampled in Monte Carlo rather than treated as fixed.
+Mapping rules used in practice:
+
+* **If LS is directly observed on a 0–10 scale**, conversion is direct (preferred case).[1]
+* **If momentary affect is on another scale (e.g., 0–100)**, rescale and apply a cross-walk (or sensitivity band) to translate to LS-equivalent changes before integrating over time.[5]
+* **If outcomes are intermediate psychosocial constructs** (bonding, anxiety), use cross-walk coefficients to LS or treat as scenario-specific proxy effects with explicit uncertainty.[3][6]
+
+### 3.4 Scope conditions and guardrails from the positive evidence review
+
+The positive-summary document adds four implementation guardrails that are carried into this report:
+
+* **Exposure should be parameterized in grams of ethanol**, with “standard drink” used only as a jurisdiction-specific convenience unit.[4][58][59]
+* **Discounting should be explicit and sensitivity-tested** because some benefits are immediate while a subset of social/economic channels may persist.[1]
+* **Double counting should be avoided** when multiple proxies measure overlapping constructs (e.g., mood + social confidence during the same episode).[5][9]
+* **Health-benefit claims at low doses are high-uncertainty** and should not be treated as robust positive utilons in the base case given recent reassessments of protective-effect claims.[2][38]
+
+### 3.5 Practical implication for this report’s baseline positive draw
+
+Given this evidence structure, the baseline positive module is intentionally modest at the annualized LS level: it allows frequent short-run gains but constrains long-run persistent uplift unless supported by stronger causal evidence. This keeps positive utilons empirically grounded while preserving uncertainty bands for plausible social and expectancy effects.[3][5][11]
 
 ---
 
