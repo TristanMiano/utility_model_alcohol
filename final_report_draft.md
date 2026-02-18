@@ -45,6 +45,16 @@ In implementation with daily or annual time steps, this becomes a discounted sum
 
 ## 2) Exposure stream: how drinking is simulated
 
+This section maps directly to `sim.cpp` implementation choices. The code uses a global script config with:
+
+* 60-year horizon (`years = 60`),
+* 365 days/year,
+* baseline intake `drinks_per_day = 1.5`,
+* day-count model default `poisson`, and
+* simulation mode default `expected` with an alternative `daily` mode.
+
+The report outputs shown elsewhere were mostly generated in `expected` mode for speed at large Monte Carlo sizes (20k runs), while the model selected for *mechanistic explanation* here is `daily` mode because it preserves event timing and state transitions day-by-day.
+
 ### 2.1 Standardization and daily draws
 
 Alcohol exposure is parameterized in **grams of ethanol**, with “standard drinks” treated as a conversion convenience. Two conventions are supported:
@@ -66,6 +76,13 @@ Daily drinks can be generated using one of:
 * **Two-point mixture**: `drinks_today = 0` with probability (p_0), otherwise a high value chosen to preserve the mean
 
 This matters because many harms are highly nonlinear in dose and concentrate in **heavy episodic** days.
+
+In `sim.cpp`, these are implemented in `sample_drinks_today(...)` and `drinks_pmf(...)`:
+
+* `sample_drinks_today` is used when the simulator needs realized day-level trajectories (the `daily` mode path).
+* `drinks_pmf` is used when the simulator needs expectations over dose without sampling every day-level benefit event (the `expected` mode path).
+
+So both modes share the same exposure assumptions, but they differ in whether the model propagates full day-level randomness through each channel.
 
 ### 2.3 Binge and high-intensity markers
 
@@ -185,6 +202,20 @@ Transitions depend on risk-drinking frequency derived from the daily exposure st
 
 ## 5) Monte Carlo design: what is randomized and why
 
+### 5.0 How `sim.cpp` is organized (execution flow)
+
+At a high level, each run does:
+
+1. Sample one positive-utility person profile (`PosPerson`) from discrete menus.
+2. Sample one negative-parameter draw (`NegParams`) from discrete menus.
+3. Branch on `--mode`:
+   * `daily`: call `simulate_life_rollout(...)`.
+   * `expected`: call the hybrid annualized path inside `simulate_one_person()`.
+4. Return a `SimOut` tuple containing total positive, total negative, net utility, and component breakdowns.
+5. Aggregate over `--runs` and print percentile summaries plus decile contribution tables.
+
+This makes the Monte Carlo outer loop identical across modes; only the within-person utility accounting engine changes.
+
 ### 5.1 Parameter menus and uniform sampling
 
 Instead of single best-guess parameters, the model uses **discrete parameter menus** and samples **uniformly** across:
@@ -209,6 +240,45 @@ The scenario set modifies the simulated world in targeted ways:
 * **Never drink and drive**: removes (or sharply reduces) the driving-related acute harm channel while leaving other components intact
 * **No binge**: removes binge/high-intensity structure (or forces it absent), reducing acute tails and AUD risk triggers
 * **Abstinence**: eliminates both benefits and harms from alcohol exposure
+
+### 5.3 Which model was chosen and why (`daily` focus)
+
+For this write-up, the chosen structural model is **`--mode daily`**, because it is the most behaviorally explicit representation of utility over time:
+
+* It simulates each day in sequence over the life horizon.
+* It discounts each day at continuous-time factor `exp(-r t)` using the day midpoint.
+* It realizes whether that day is social, whether acute events occur, whether hangover carries to the next day, and whether AUD state changes at month boundaries.
+* It updates lagged chronic exposure states (EMA) every day before computing chronic disutility.
+
+In utility terms, `daily` mode is closest to the conceptual object
+
+[
+U_{\text{net}} = \sum_{d=1}^{D} e^{-r t_d}\left(\Delta LS_{+,d} - \Delta LS_{-,d}\right),
+]
+
+with path-dependent state variables (AUD state, hangover days remaining, alive/dead status, exposure EMAs).
+
+By contrast, `expected` mode is a computational shortcut that:
+
+* uses expected daily positive utility from the drink-count PMF,
+* computes annual expected acute/hangover/chronic terms from PMF-based probabilities and yearly realized binge/high-intensity frequencies,
+* simulates AUD at annual transitions rather than monthly/day-linked state updates.
+
+So `expected` remains useful for large sweeps and sensitivity grids, while `daily` is preferred when we want the utility narrative to explicitly reflect within-life timing and dependence across events.
+
+### 5.4 Daily-mode mechanics in utility accounting
+
+Inside `simulate_life_rollout(...)`, daily accounting proceeds as:
+
+1. **Drinking draw** (possibly AUD-modified intensity): sample `drinks_today`.
+2. **Positive utility**: compute day-level life-satisfaction uplift via a saturating function of drinks, plus social-context modifier; add discounted `\Delta LS / 365`.
+3. **Acute harms**: draw Bernoulli events for traffic injury, non-traffic injury, violence (binge-linked), and poisoning (high-intensity-linked); convert event DALY burden to utilons.
+4. **Hangover utility loss**: on binge-triggered days, stochastically start/extend hangover spell; apply next-day LS loss while spell lasts.
+5. **Chronic harms**: update chronic EMA exposure states and compute daily equivalent chronic utility loss.
+6. **AUD burden and transitions**: apply daily AUD disability equivalent when active; update AUD state monthly using risk-day-dependent onset/remission/relapse hazards.
+7. **Mortality stop rule**: if a fatal acute event occurs, terminate future utility flow.
+
+The resulting net utility is therefore not just “expected dose effect,” but a discounted path integral over realized stochastic life histories.
 
 ---
 
