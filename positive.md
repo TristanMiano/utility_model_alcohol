@@ -459,3 +459,64 @@ This is why the framework insists on tagging each channel with evidence grade (R
 
 - **Do not assume health benefits.** Major reviews and public health statements emphasize that low/moderate drinking is not reliably protective for all-cause mortality and that carcinogenic risk has no clear safe threshold. Treat “health benefits” as a high-uncertainty channel and keep it separable for later netting against health harms. citeturn19search2turn2search1turn2search10  
 - **Separate “alcohol as a substance” from “alcohol as a social technology.”** Many positives show up most strongly in social contexts (and are weaker or negative when drinking alone), so ethanol-attributable utilons may be substantially smaller than occasion-attributable utilons; the placebo/control decomposition is the cleanest path to this separation. citeturn7view0turn12view0turn16search22
+
+## Bibliography (Markdown)
+
+* Frijters, P., Krekel, C., Sanchis, R., & Santini, Z. I. (2024). *The WELLBY: a new measure of social value and progress*. **Humanities and Social Sciences Communications, 11**, Article 736. ([Nature][1])
+* Zhao, J., Stockwell, T., et al. (2023). *Association Between Daily Alcohol Intake and Risk of All-Cause Mortality: A Systematic Review and Meta-analyses*. **JAMA Network Open, 6**(3), e236185. [https://doi.org/10.1001/jamanetworkopen.2023.6185](https://doi.org/10.1001/jamanetworkopen.2023.6185) ([PMC][2])
+* Sayette, M. A., Creswell, K. G., Dimoff, J. D., Fairbairn, C. E., Cohn, J. F., Heckman, B. W., Kirchner, T. R., Levine, J. M., & Moreland, R. L. (2012). *Alcohol and Group Formation: A Multimodal Investigation of the Effects of Alcohol on Emotion and Social Bonding*. **Psychological Science, 23**(8), 869–878. [https://doi.org/10.1177/0956797611435134](https://doi.org/10.1177/0956797611435134) ([PMC][3])
+* Kerr, W. C., & Stockwell, T. (2012). *Understanding standard drinks and drinking guidelines*. **Drug and Alcohol Review, 31**(2), 200–205. [https://doi.org/10.1111/j.1465-3362.2011.00374.x](https://doi.org/10.1111/j.1465-3362.2011.00374.x) ([PMC][4])
+* Baumberg Geiger, B., & MacKerron, G. (2016). *Can alcohol make you happy? A subjective wellbeing approach*. **Social Science & Medicine, 156**, 184–191. [https://doi.org/10.1016/j.socscimed.2016.03.034](https://doi.org/10.1016/j.socscimed.2016.03.034) ([PubMed][5])
+* Himle, J. A., Abelson, J. L., Haghightgou, H., Hill, E. M., Nesse, R. M., & Curtis, G. C. (1999). *Effect of alcohol on social phobic anxiety*. **American Journal of Psychiatry, 156**(8), 1237–1243. [https://doi.org/10.1176/ajp.156.8.1237](https://doi.org/10.1176/ajp.156.8.1237) ([PubMed][6])
+* Dunbar, R. I. M., & Launay, J. (2016). *Functional Benefits of (Modest) Alcohol Consumption*. **Adaptive Human Behavior and Physiology, 3**(2), 118–133. [https://doi.org/10.1007/s40750-016-0058-4](https://doi.org/10.1007/s40750-016-0058-4) ([PMC][7])
+* Childs, E., O’Connor, S., et al. (2011). *Bidirectional interactions between acute psychosocial stress and acute intravenous alcohol in healthy men*. **Alcoholism: Clinical and Experimental Research, 35**(10), 1794–1803. [https://doi.org/10.1111/j.1530-0277.2011.01522.x](https://doi.org/10.1111/j.1530-0277.2011.01522.x) ([PMC][8])
+* Dora, J., Piccirillo, M., et al. (2023). *The daily association between affect and alcohol use: A meta-analysis of individual participant data*. **Psychological Bulletin, 149**(1–2), 1–24. [https://doi.org/10.1037/bul0000387](https://doi.org/10.1037/bul0000387) ([PMC][9])
+* Castro, F. G., Barrera, M., Jr., et al. (2014). *Culture and Alcohol Use: Historical and Sociocultural Themes From 75 Years of Alcohol Research*. **Journal of Studies on Alcohol and Drugs (Supplement), 75**(Suppl 17), 36–49. [https://doi.org/10.15288/jsads.2014.s17.36](https://doi.org/10.15288/jsads.2014.s17.36) ([PMC][10])
+* Testa, M., et al. (2006). *Understanding Alcohol Expectancy Effects: Revisiting the Placebo Condition*. **Alcoholism: Clinical and Experimental Research, 30**(2), 339–348. [https://doi.org/10.1111/j.1530-0277.2006.00039.x](https://doi.org/10.1111/j.1530-0277.2006.00039.x) ([PMC][11])
+* Caumiant, E. P., Kang, D., Girard, J. M., & Fairbairn, C. E. (2025). *Alcohol and Emotion: Analyzing Convergence Between Facially-Expressed and Self-Reported Indices of Emotion Under Alcohol Intoxication*. **Psychology of Addictive Behaviors, 39**(8), 677–688. [https://doi.org/10.1037/adb0001053](https://doi.org/10.1037/adb0001053) ([PMC][12])
+* (Worksite wages paper). (1995). *Is moderate alcohol use related to wages? Evidence from four worksites*. **(ScienceDirect / Elsevier journal page)**. ([ScienceDirect][13])
+* Peters, B. L., & Stringham, E. P. (2006). *No booze? You may lose: Why drinkers earn more money than nondrinkers*. **Journal of Labor Research**. ([Springer][14])
+* (Wharton working paper / PDF). *Impact of Alcohol on Negotiator Behavior*. **Wharton / University of Pennsylvania (PDF)**. 
+* World Health Organization, Regional Office for Europe. (2022/2023). *No level of alcohol consumption is safe for our health*. (WHO Europe news-room post; published Dec 28, 2022 on the page.) ([World Health Organization][15])
+* National Institute on Alcohol Abuse and Alcoholism (NIAAA). (n.d.). *What is a standard drink?* ([PubMed][6])
+* National Institute on Alcohol Abuse and Alcoholism (NIAAA). (n.d.). *Alcohol drinking patterns*. ([Office for National Statistics][16])
+* Substance Abuse and Mental Health Services Administration (SAMHSA). (n.d.). *National Survey on Drug Use and Health (NSDUH): Data we collect*.
+* Centers for Disease Control and Prevention (CDC). (n.d.). *Behavioral Risk Factor Surveillance System (BRFSS)*.
+* National Institute for Health and Care Excellence (NICE). (n.d.). *Guide to the methods of technology appraisal (Economic evaluation / reference case discounting)*.
+
+If you want, paste (or re-upload) the full report (or the “Sources” section you had), and I’ll reconcile this into an exact “31-item” bibliography with **no unknown placeholders** (e.g., I’ll replace the two “worksite wages paper” / “Wharton PDF” style entries with full author + year lines if they’re specified in the report text).
+
+[1]: https://www.nature.com/articles/s41599-024-03229-5 "The WELLBY: a new measure of social value and progress | Humanities and Social Sciences Communications"
+[2]: https://pmc.ncbi.nlm.nih.gov/articles/PMC10066463/ "
+            Association Between Daily Alcohol Intake and Risk of All-Cause Mortality: A Systematic Review and Meta-analyses - PMC
+        "
+[3]: https://pmc.ncbi.nlm.nih.gov/articles/PMC5462438/ "
+            Alcohol and Group Formation: A Multimodal Investigation of the Effects of Alcohol on Emotion and Social Bonding - PMC
+        "
+[4]: https://pmc.ncbi.nlm.nih.gov/articles/PMC3276704/ "
+            Understanding standard drinks and drinking guidelines - PMC
+        "
+[5]: https://pubmed.ncbi.nlm.nih.gov/27043371/ "Can alcohol make you happy? A subjective wellbeing approach - PubMed"
+[6]: https://pubmed.ncbi.nlm.nih.gov/10450266/?utm_source=chatgpt.com "Effect of alcohol on social phobic anxiety - PubMed"
+[7]: https://pmc.ncbi.nlm.nih.gov/articles/PMC7010365/ "
+            Functional Benefits of (Modest) Alcohol Consumption - PMC
+        "
+[8]: https://pmc.ncbi.nlm.nih.gov/articles/PMC3183385/ "
+            Bidirectional interactions between acute psychosocial stress and acute intravenous alcohol in healthy men - PMC
+        "
+[9]: https://pmc.ncbi.nlm.nih.gov/articles/PMC10409490/ "
+            The daily association between affect and alcohol use: A meta-analysis of individual participant data - PMC
+        "
+[10]: https://pmc.ncbi.nlm.nih.gov/articles/PMC9838738/ "
+            Culture and Alcohol Use: Historical and Sociocultural Themes From 75 Years of Alcohol Research - PMC
+        "
+[11]: https://pmc.ncbi.nlm.nih.gov/articles/PMC1403295/ "
+            Understanding Alcohol Expectancy Effects: Revisiting the Placebo Condition - PMC
+        "
+[12]: https://pmc.ncbi.nlm.nih.gov/articles/PMC12238295/?utm_source=chatgpt.com "Alcohol and Emotion: Analyzing Convergence Between Facially-Expressed and Self-Reported Indices of Emotion Under Alcohol Intoxication - PMC"
+[13]: https://www.sciencedirect.com/science/article/pii/016762969590921R "Is moderate alcohol use related to wages? Evidence from four worksites - ScienceDirect"
+[14]: https://link.springer.com/article/10.1007/s12122-006-1031-y "No booze? You may lose: Why drinkers earn more money than nondrinkers | Journal of Labor Research | Springer Nature Link"
+[15]: https://www.who.int/europe/news-room/04-01-2023-no-level-of-alcohol-consumption-is-safe-for-our-health?utm_source=chatgpt.com "No level of alcohol consumption is safe for our health"
+[16]: https://www.ons.gov.uk/peoplepopulationandcommunity/wellbeing/methodologies/personalwellbeingsurveyuserguide?utm_source=chatgpt.com "Personal well-being user guidance - Office for National Statistics"
+
+
